@@ -1,7 +1,7 @@
 """Define the state structures for the agent."""
 
 from __future__ import annotations
-
+import operator
 from dataclasses import dataclass
 from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage, AnyMessage
@@ -14,8 +14,15 @@ import operator
 class State:
    IP_Port : str
   
-   
-   
 
+@dataclass
+class PenTestState:
+    vulnerabilities: list
+    domains: list
+    emails: list
+    passwords: list
+    services: list
+    
+    
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]

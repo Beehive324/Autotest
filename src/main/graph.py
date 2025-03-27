@@ -31,20 +31,16 @@ async def recon_phase(state: State, config: RunnableConfig):
 
 async def planning_phase(state: State, config: RunnableConfig):
     
-    #Define planning_phase logic
-    
     pass
 
 
 async def access_phase(state: State, config: RunnableConfig):
-    
-    #access phase logic
-
+   
     pass
 
 
 async def reporting_phase(state: State, config: RunnableConfig):
-
+    
     pass
 
 # Define a new graph
