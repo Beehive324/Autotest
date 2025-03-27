@@ -60,7 +60,10 @@ workflow.add_node("reporting_phase", reporting_phase)
 
 # Set the entrypoint as `call_model`
 
-workflow.set_entry_point("reccon_phase")
+workflow.set_entry_point("planning_phase")
+workflow.add_edge("planning_phase", "reccon_phase")
+workflow.add_edge("reccon_phase", "access_phase")
+workflow.add_edge("access_phase", "reporting_phase")
 
 # Compile the workflow into an executable graph
 graph = workflow.compile()

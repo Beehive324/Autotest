@@ -12,9 +12,8 @@ import operator
 #storage for the MAS System, data that the MAS System will hold
 @dataclass
 class State:
-   domains_scanned : list
-   scan_results : str
-   analysis : str
+   IP_Port : str
+  
    
    
 
