@@ -25,9 +25,7 @@ async def my_node(state: State, config: RunnableConfig) -> Dict[str, Any]:
 
 
 async def recon_phase(state: State, config: RunnableConfig):
-    
     # Define recon_phase logic
-    
     pass
 
 
@@ -41,8 +39,7 @@ async def planning_phase(state: State, config: RunnableConfig):
 async def access_phase(state: State, config: RunnableConfig):
     
     #access phase logic
-    
-    
+
     pass
 
 
@@ -58,8 +55,7 @@ workflow.add_node("planning_phase", planning_phase)
 workflow.add_node("access_phase", access_phase)
 workflow.add_node("reporting_phase", reporting_phase)
 
-# Set the entrypoint as `call_model`
-
+# Add edges to graph
 workflow.set_entry_point("planning_phase")
 workflow.add_edge("planning_phase", "reccon_phase")
 workflow.add_edge("reccon_phase", "access_phase")
