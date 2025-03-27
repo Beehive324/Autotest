@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from langgraph import add_messages
+from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage, AnyMessage
-from typiing_extensions import TypedDict, Annotated, Sequence, List, Literal, Optional, Dict
+from typing_extensions import TypedDict, Annotated, Sequence, List, Literal, Optional, Dict
 import operator
 
 

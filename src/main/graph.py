@@ -31,8 +31,6 @@ async def recon_phase(state: State, config: RunnableConfig):
     pass
 
 
-
-
 async def planning_phase(state: State, config: RunnableConfig):
     
     #Define planning_phase logic
@@ -50,21 +48,19 @@ async def access_phase(state: State, config: RunnableConfig):
 
 async def reporting_phase(state: State, config: RunnableConfig):
 
-    
     pass
-
 
 # Define a new graph
 workflow = StateGraph(State, config_schema=Configuration)
 # Add the node to the graph
 workflow.add_node("reccon_phase", recon_phase)
-workflow.add_node("planning_phase", planning_hase)
+workflow.add_node("planning_phase", planning_phase)
 workflow.add_node("access_phase", access_phase)
 workflow.add_node("reporting_phase", reporting_phase)
 
 # Set the entrypoint as `call_model`
 
-workflow.set_entry_point("__start__", "reccon_phase")
+workflow.set_entry_point("reccon_phase")
 
 # Compile the workflow into an executable graph
 graph = workflow.compile()
