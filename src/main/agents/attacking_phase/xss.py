@@ -13,7 +13,7 @@ class XSS:
         self.domain = domain
         self.model = model
 
-    async def format_domain(domain):
+    async def format_domain(self, state: XSSState):
         """
         Converts https://example.com -> "example.com"
         """
@@ -27,7 +27,7 @@ class XSS:
         return netloc
     
     #update the XSS State
-    async def scan_contents(state: XSSState):
+    async def scan_contents(self, state: XSSState):
         response = requests.get(response = requests.get(f'https://r.jina.ai/https://{format_domain(self.domain)}'))
         content = response.content
         
@@ -35,16 +35,18 @@ class XSS:
         
         return content
     
-    
-    
-    async def generate_payloads(state: XSSSState):
+
+    async def generate_payloads(self, state: XSSSState):
         curr_payloads = state['payloads']
         
+        return curr_payloads
+        
     
-    async def insert_payloads(state: XSSState):
-        pa
-
-    async def find_vulnerabilities(state: XSSState):
+    async def insert_payloads(self, state: XSSState):
+        pass
+            
+                
+    async def find_vulnerabilities(self, state: XSSState):
         content = state['url_contents']
         
         prompt = f"""

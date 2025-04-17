@@ -8,9 +8,9 @@ dorks = {
         
         "dorks": [ 
             
-            "site:https://amazon.com file:pdf",
-            "site:https://amazon.com file:backup",
-            "site:https://amazon.com"
+            "site:https://example.com file:pdf",
+            "site:https://example.com file:backup",
+            "site:https://example.com"
                   
                   ]  
     },
