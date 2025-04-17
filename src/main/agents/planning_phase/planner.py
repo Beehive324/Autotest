@@ -18,7 +18,6 @@ class PlannerInput:
 
 
 
-
 #subdomain enumerator agent
 class PlannerAgent:
     def __init__(
@@ -35,6 +34,10 @@ class PlannerAgent:
         You are an experienced Pentester your task is to create a Plan of Attack give the give vulnerabilties
         
         """
+    
+    
+    async def run():
+        create_plan
         
         
         

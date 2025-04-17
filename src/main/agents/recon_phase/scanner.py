@@ -12,8 +12,6 @@ class ExtractionSchema(BaseModel):
     sub_domains: Optional[list]
     
     
-
-
 class ScanningAgent:
     def __init__(
         self

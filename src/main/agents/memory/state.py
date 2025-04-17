@@ -14,7 +14,7 @@ import operator
 class State:
    IP_Port : str
   
-
+ 
 @dataclass
 class PenTestState:
     vulnerabilities: list

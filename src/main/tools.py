@@ -34,7 +34,6 @@ class DomainEnumerationTool(BaseModel):
         subdomains = sublist3r.main(domain, no_threads, savefile, ports, silent, verbose, enable_bruteforce, engines)
         return subdomains 
 
-
 class Nmap(BaseModel):
     name: str = "NmapTool"
     description: str = (
@@ -42,9 +41,9 @@ class Nmap(BaseModel):
         """
         Discover open ports using
         nmap
-        """
-           
+        """       
     )
+    
     args_schema: Type[BaseModel] = NmapInput
     
     def_run(self, ip_port):
