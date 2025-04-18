@@ -13,6 +13,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from typing import Optional, Type
+from tavily import TavilyClient
+
+
+
+tavily_client = TavilyClient(api_key=api_key)
 
 
 #Defining tools using a subclass BaseTool Approach
@@ -28,6 +33,21 @@ class DomainInput(BaseModel):
 
 class DorksInput(BaseModel):
     dorks: List[str] = Field(description="Dorks to carry out web search")
+    
+    
+#carrying out web search using tavily
+class WebSearch(BaseTool):
+    name = "web search"
+    description ="web search"
+    args_schema: Type[BaseModel] = DorksInput
+    
+    def _run(self, dorks: List[str]) -> str:
+        
+        return f"Running web search on the following {dorks}...."
+    
+    async def _run(self, dorls: List[str]) -> str:
+    
+        return f"Running web search on the following {dorks}..."
 
 #tool to use nmap
 class Nmap(BaseTool):

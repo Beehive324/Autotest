@@ -28,7 +28,7 @@ class XSS:
     
     #update the XSS State
     async def scan_contents(self, state: XSSState):
-        response = requests.get(response = requests.get(f'https://r.jina.ai/https://{format_domain(self.domain)}'))
+        response = requests.get(f'https://r.jina.ai/https://{format_domain(self.domain)}')
         content = response.content
         
         state['url_contents'] = content
