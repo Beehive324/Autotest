@@ -27,7 +27,15 @@ class XSSState:
     payloads: List[str]
     url_contents: str
     
- 
+
+@dataclass
+class ReconState:
+    domain: str
+    ip: str
+    vulnerabilities: List[str]
+    
+    
+     
 @dataclass
 class PenTestState:
     vulnerabilities: List[str]

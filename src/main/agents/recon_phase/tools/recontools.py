@@ -10,43 +10,126 @@ from memory.state import ReconState
 from langchain_ollama import ChatOllama
 from prompts import enum_prompt
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, Field
+from typing import Optional, Type
 
 
+#Defining tools using a subclass BaseTool Approach
 
-@tool
-def resolver(domain: str):
-    res = dns.resolver.resolve(domain)
-    return res
+#Nmap Input takes the ip address
+class NmapInput(BaseModel):
+    ip_address: str = Field(description="Target's IP address")
 
-@tool
-def domain_enumeration(domain: str):
-    pass
-
-@tool
-def google_dorks():
-    pass
-
-@tool
-def github_dorks():
-    pass
-
-@tool
-def shodan_dorks():
-    pass
+#Resolver Input takes the domain name
+class DomainInput(BaseModel):
+    domain_name: str = Field(description="Target's Domain")
 
 
-@tool
-def nmap(ip: str):
-    nm = nmap.PortScanner()
-    scanner_res = nm.scan(f'{port}')
-    hosts = nm.all_hosts()
+class DorksInput(BaseModel):
+    dorks: List[str] = Field(description="Dorks to carry out web search")
+
+#tool to use nmap
+class Nmap(BaseTool):
+    name = "nmap"
+    description = "uses nmap to discover ip ports"
+    args_schema: Type[BaseModel] = NmapInput
     
-    output = {
-        "scan results": scanner_res,
-        "hosts": hosts
+    def _run(self, ip_address: str) -> str:
+        print(f"{ip_address = }")
+        return f"Scanning {ip_address}..."
+    
+    async def _run(
+        self, ip_address: str
+    ) -> str:
+        return "Running Tool asynchronously"
+    
+class Resolve(BaseTool):
+    name = "resolver"
+    description = "resolves domains"
+    args_schema: Type[BaseModel] = DomainInput
+    
+    def _run(self, domain_name: str) -> str:
+        return f"Resolving {domain_name.....}"
+    
+    async def_run(self, domain_name: str) -> str: #run the tool asynchronously
+        return f"Resolving {domain_name}...."
+
+class Enumerator(BaseTool):
+    name = "domain_enumerator"
+    description = "enumerates domain names"
+    args_schema: Type[BaseModel] = DomainInput
+    
+    def _run(self, domain_name: str) -> str:
+        domains = []
         
+        return f"Enumerating domains for {domain_name}....."
+    
+    async def_run(self, domain_name: str) -> str:
+        return f"Enumerating {domain_name}...."
+
+
+class GoogleDorks(BaseTool):
+    name = "google dorks"
+    description = "forms google dorks in order to find out specific information"
+    args_schema: Type[BaseModel] = DomainInput
+    
+    def _run(self, domain_name: str) -> List[str]:
+        dorks = [
+            
+        ]
         
-    }
+        return f"Forming google dorks for {domain_name}"
     
-    return output
+    async def_run(self, domain_name: str) -> str:
+        return f"Forming google dorks for {domain_name}"
+
+
+
+class GitHubDorks(BaseTool):
+    name = "Github dorks"
+    description = "forms github dorks in order to find out repo information, codebases"
+    args_schema: Type[BaseModel] = DomainInput
     
+    def _run(self, domain_name: str) -> List[str]:
+        github_dorks = [
+            
+        ]
+        
+        return f"Forming Github dorks for {domain_name}..."
+    
+    async def_run(self, domain_name: str) -> str:
+        return f"Forming Github dorks for {domain_name}..."
+
+
+class ShodanDorks(BaseTool):
+    name = "Shodan Dorks"
+    description = "forms shodan dorks given a domain input"
+    args_schema: Type[BaseModel] = DomainInput
+    
+    def _run(self, domain_name: str) -> List[str]:
+        shodan_dorks = [
+            
+        ]
+        
+        return f"Forming shodan dorks for {domain_name}..."
+    
+    async def_run(self, domain_name: str) -> str:
+        
+        return f"Formind shodan dorks for {domain_nmae}"
+
+
+class APIDiscovery(BaseTool):
+    name = "API Discovery"
+    description = "tools to discover apis given a domain as input"
+    args_schema: Type[BaseModel] = DomainInput
+    
+    def _run(self, domain_name: str) -> List[str]:
+        
+        return f"Discovering apis for {domain_name}"
+    
+    async def_run(self, domain_name: str) -> List[str]:
+        
+        return f"Discovering apis for {domain_name}"
+
+
