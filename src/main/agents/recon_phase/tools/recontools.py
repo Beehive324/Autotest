@@ -188,7 +188,6 @@ class Subdomain_Enum_sublist3r(BaseTool):
         
         return subdomains
 
-
 class GoogleDorks(BaseTool):
     name = "google dorks"
     description = "forms google dorks in order to find out specific information"

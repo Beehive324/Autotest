@@ -3,49 +3,65 @@ from langchain_core.tools import tool
 import requests
 from pydantic import BaseModel, Field
 import sublist3r
-from .memory import PenTestState
+from agents.memory.state import PenTestState
 from prompts import enum_prompt
+from typing import List, Tool
+from langgraph.graph import StateGraph, END
+from attacking_phase.tools.attacktools import SQL_Injection, XSS_attack, CSRF_attack, ShellShock, BinaryAnalysis
 
 
 class Attacker:
-    def __init__(self, 
-                 domain,
-                 attack_type
-                 ):
-        self.type = domain
-        self.attack_type = attack_type
+    def __init__(self):
+        self._tools: list = [
+            SQL_Injection,
+            XSS_attack,
+            CSRF_attack,
+            ShellShock,
+            BinaryAnalysis
+        ]
     
-    def SQL_injection(state: PenTestState): #different agents for each?
-        """
-        Logic to Carry out SQL Injection attack
-        """
+    async def get_tools(self) -> List[Tool]:
+        return self._tools
+    
+    async def _plan_attack_(self, state: PenTestState):
         pass
     
-    def XSS_attack(state: PenTestState):
-        """
-        Logic to Carry out XSS_attack
-        """
+    
+    async def _sql_injection_(self, state: PenTestState):
         pass
     
-    def CSRF_attack(state: PenTestState):
-        """
-        Logic to carry out XSS attack
-        """
-    
-    def shell_shock(state: PenTestState):
-        """
-        Logic to carry out Shell Shock attack
-        """
-    
-    def binary_analysis(state: PenTestState):
+    async def _xss_attack_(self, state: PenTestState):
         pass
+    
+    async def _csrf_attack_(self, state: PenTestState):
+        pass
+
+    async def _shell_shock_(self, state: PenTestState):
+        pass
+    
+    async def _binary_analysis_(self, state: PenTestState):
+        pass
+
+    def _create_graph_(self) -> StateGraph:
+        graph = StateGraph(PenTestState)
+        graph.add_node("start", _plan_attack_ )
+        graph.add_node("attack", _start_attacking_)
+        graph.add_node("end", END)
+    
+    
+    def add_graph_edges(self, graph):
+        graph.add_edge("start", "attack")
+    
+    
+    async def _run_attack(self, graph):
+        return graph.compile
     
     
 
 #local testing
 if __name__ == "__main__":
     attack = Attacker()
-    print(attack.SQL_injection(domain))
+
     
     
     

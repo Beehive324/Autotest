@@ -20,7 +20,6 @@ import requests
 
 
 
-
 class URL(BaseModel):
     url: str = Field(description="url input")
 
@@ -42,6 +41,8 @@ class XSS(BaseTool):
     name = "XSS tool"
     description = "tool to carry out xss attack"
     args_schema: Type[BaseModel] = URL
+    
+    
     
     async def format_url(self, url: str) -> str:
         

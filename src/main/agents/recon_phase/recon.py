@@ -49,6 +49,9 @@ class ReconnaissanceAgent:
         #tool calling for port scanning
         pass
     
+    async def _shodan_dorks(self, state: ReconState):
+        pass
+    
     def _create_graph_(self) -> StateGraph:
         graph = StateGraph(ReconState)
         graph.add_node("start", _start_recon)

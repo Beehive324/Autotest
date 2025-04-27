@@ -1,43 +1,49 @@
-from datetime import datetime
-from langchain_core.tools import tool
-import requests
-from pydantic import BaseModel, Field
-import sublist3r
-
-from prompts import enum_prompt
+from langchain_core.messages import AIMessage, HumanMessage
+from tools import recontools
+from langgraph.graph import StateGraph, END
+from memory.state import ReconState, PenTestState
+from typing import List, Tool
 
 
-class ExtractionSchema:
-    primary_domain: str
-    sub_domains : []
-
-
-
-class PlannerInput:
-    IP_Port : str = Field(description="A given port number for the pentest to be carried out")
-
-
-
-#subdomain enumerator agent
-class PlannerAgent:
-    def __init__(
+class PlanningAgent:
+    def __init__(self):
         self, 
-        domain
-        ):
         
-        self.domain = domain
+        self._tools: list = [
+            
+        ]
+     
+    async def get_tools(self) -> List(Tool):
+        return self._tools
     
     
-    def create_plan():
-        prompt="""
-        
-        You are an experienced Pentester your task is to create a Plan of Attack give the give vulnerabilties
-        
-        """
+    async def _start_planning_(self, state: ReconState):
+        pass
     
     
-    async def run():
-        create_plan
+    
+    def _create_graph_(self) -> StateGraph:
+        graph = StateGraph(ReconState)
+        graph.add_node("start", _start_planning_)
+        graph.add_node("end", END)
         
         
+    
+    def add_graph_edges(self, graph):
+        graph.add_edge("start", "end")
+        
+    async def _run_planning(self, graph):
+        return graph.compile()
+    
+    
+    
+    
+
+# local testing
+if __name__ == "__main__":
+    planner = PlanningAgent()
+    print(planner.get_tools())
+    
+    
+
         
