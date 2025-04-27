@@ -17,8 +17,6 @@ class ReportingAgent:
     def __init__(
         self
         ):
-    
-
     async def generate_report():
         pass
         

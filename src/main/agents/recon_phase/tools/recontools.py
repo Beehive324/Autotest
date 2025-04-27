@@ -17,6 +17,7 @@ from tavily import TavilyClient
 import logging
 import mylib
 import sublist3r
+import nmap
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,6 @@ class WebSearch(BaseTool):
         return output
 
 #tool to use nmap
-
 class Nmap(BaseTool):
     name = "nmap"
     description = "uses nmap to discover the target's IP address based on a network segment"
@@ -80,9 +80,10 @@ class Nmap(BaseTool):
  
     
     def _run(self, ip_address: str) -> str:
-        pass
+        nm = nmap.PortCanner()
+        
+        nm.scan()
      
-
     
 class Resolve(BaseTool):
     name = "resolver"
@@ -134,12 +135,26 @@ class Subdomain_Enum_findomain(BaseTool):
     name = "domain_enumerator_findomain"
     description = "domain enumeration tool using findomain"
     args_schema: Type[BaseModel] = DomainInput
+    
+    
+    def _run(self, domain_name: str) -> str:
+        logging.info(f"Running subdomain enmueration on {domain_name}...")
+        pass
+    
+    async def _arun(self, domain_name: str) -> str:
+        pass
 
 
 class Subdomain_Enum_amass(BaseTool):
     nmae = "domain_enumerator_amass"
     description = "domain enumeration tool using amass"
     args_schema: Type[BaseModel] = DomainInput
+    
+    def _run(self, domain_name: str) -> str:
+        pass
+    
+    async def _arun(self, domain_name: str) -> str:
+        pass
 
 
 class Subdomain_Enum_wayback(BaseTool):
@@ -147,7 +162,13 @@ class Subdomain_Enum_wayback(BaseTool):
     description = "domain enumeration tool using wayback urls"
     args_schema: Type[BaseModel] = DomainInput
     
+    def _run(self, domain_name: str) -> str:
+        pass
     
+    async def _arun(self, domain_name: str) -> str:
+        pass
+    
+   
 class Subdomain_Enum_sublist3r(BaseTool):
     name = "domain_enumerator_3listr"
     description = "domain enumeration using sublist3r"
@@ -166,7 +187,6 @@ class Subdomain_Enum_sublist3r(BaseTool):
         subdomains = sublist3r.main(f'{domain_name}')
         
         return subdomains
-        
 
 
 class GoogleDorks(BaseTool):
