@@ -22,16 +22,16 @@ from IPython.display import Image, display
 def initialize_agents() -> Dict[str, Any]:
     """Initialize all agents for the pentesting workflow"""
     return {
-        "planner": Planner(),
-        "recon": Recon(),
-        "attacker": Attacker(),
-        "reporter": Reporter()
+        "planner": Planner(), #Planner Agent
+        "recon": Recon(), #Reconnaisance Agent
+        "attacker": Attacker(), #Attacker Agent
+        "reporter": Reporter() #Report Agent
     }
 
 def create_workflow() -> StateGraph:
     """Create the main pentesting workflow graph"""
-    workflow = StateGraph(PenTestState)
-    initialized_agents = initialize_agents()
+    workflow = StateGraph(PenTestState) #initialise our workflow
+    initialized_agents = initialize_agents() #initalise our agents
     
     # Planning Phase Nodes
     workflow.add_node("planning_phase", initialized_agents["planner"]._planning_phase)
@@ -153,7 +153,7 @@ def create_workflow() -> StateGraph:
 workflow = create_workflow()
 graph = workflow.compile()
 
-display(Image(graph.get_graph().draw_png('pentest.png')))
+#display(Image(graph.get_graph().draw_png('pentest.png')))
 
 
 # Export the graph

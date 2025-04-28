@@ -30,35 +30,74 @@ class Recon:
     
     async def get_tools(self) -> List[Tool]:
         return self.tools
-   
+
     async def _start_recon(self, state: ReconState):
-        # tool calling for starting recon phase
-        pass
-    
+        # tool calling for starting recon phase given an IP port
+        ip = state['ip']
+        nmap_results = Nmap()._run(ip_address=ip)
+        
+        return {
+            
+            "nmap_results": nmap_results
+        }
+        
     async def _dns_resolution(self, state: ReconState):
-        # tool calling for starting dns resolution
-        pass
-    
+        domain = state['domain']
+        
+        dns_resolution_result = Resolve._arun(domain_name=domain)
+        
+        return {
+            "dns_resolution": dns_resolution_result
+        }
+        
+    #domain enumeration
     async def _subdomain_enumeration(self, state: ReconState):
-        # tool calling for subdomain enumeration
-        pass
-    
+        domain = state['domain']
+        
+        return {
+            
+            "crt_enumeration": Subdomain_Enum_CRT._run(domain_name=domain),
+            "gobuster": Subdomain_Enum_gobuster._run(domain_name=domain),
+            "findomain": Subdomain_Enum_findomain._arun(domain_name=domain),
+            "amass": Subdomain_Enum_amass._arun(domain_name=domain),
+            "wayback": Subdomain_Enum_wayback._arun(domain_name=domain),
+            "sublist3r": Subdomain_Enum_sublist3r._arun(domain_name=domain),
+            
+        }
+        
     async def _github_dorks(self, state: ReconState):
-        # tool calling for github dorks
-        pass
+        domain = state['domain']
+        
+        return {
+            
+            'github_dorks_results': GitHubDorks._arun(domain_name=domain)
+        }
     
     async def _google_dorks(self, state: ReconState):
-        # tool calling for google dorks
-        pass
+        
+        domain = state['domain']
+        
+        return {
+            
+            'google_dorks': GoogleDorks._arun(domain_name=domain)
+        }
         
     async def _port_scanning(self, state: ReconState):
-        # tool calling for port scanning
-        pass
+        
+        IP_PORT = state['ip']
+        
+        return {
+            'IP_SCAN': Nmap._run(ip_address=IP_PORT)
+        }
     
     async def _shodan_dorks(self, state: ReconState):
-        # tool calling for shodan dorks
-        pass
-    
+        domain = state['domain']
+        
+        return {
+            
+            'Shodan_dork_results': ShodanDorks._arun(domain_name=domain)
+        }
+        
     def _create_graph(self) -> StateGraph:
         graph = StateGraph(ReconState)
         graph.add_node("start", self._start_recon)

@@ -3,15 +3,20 @@ from flask import Flask
 import requests
 import request 
 import jsonify
+from pyfiglet import Figlet
+
+
+f = Figlet(font='slant')
 
 app  = Flask(__name__)
 
-
+#the index routin page
 @app.route('/', methods=['GET'])
 def index():
-    return "Hello, World!"
+    return f"{f.renderText('AutoTest')}" #string interprolation
 
-@app.route('/api/v1/recon', methods=['POST'])
+#the api routes of the application
+@app.route(f'/api/v1/recon/{ip_port}', methods=['POST'])
 def recon():
     data = request.json
     return jsonify({"message": "Reconnaissance phase started"})

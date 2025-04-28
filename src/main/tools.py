@@ -46,7 +46,7 @@ class Nmap(BaseModel):
     
     args_schema: Type[BaseModel] = NmapInput
     
-    def_run(self, ip_port):
+    def _run(self, ip_port):
         nm = nmap.PortScanner()
         scanner_res = nm.scan(f"{port}")
         hosts = nm.all_hosts()
