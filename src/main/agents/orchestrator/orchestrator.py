@@ -1,20 +1,13 @@
-from agents.attacking_phase.attacker import Attacker
-from agents.planning_phase.planner import Planner
-from agents.recon_phase.recon import Recon
-from agents.reporting_phase.reporter import Reporter
+from ..attacking_phase.attacker import Attacker
+from ..planning_phase.planner import Planner
+from ..recon_phase.recon import Recon
+from ..reporting_phase.reporter import Reporter
 from .memory import PenTestState
+from langgraph.graph import StateGraph
 
-
-from . import \
-    Attacker, \
-    Planner, \
-    Recon, \
-    Reporter
-
-
- class PenTestOrchestrator:
-     def __init__(self, ip_port):
-         self.ip_port = ip_port
+class PenTestOrchestrator:
+    def __init__(self, ip_port):
+        self.ip_port = ip_port
         
     def _initalize_agents(self, agents):
         #return hashamp of each initalized agent
@@ -41,11 +34,8 @@ from . import \
         graph.add_edge("google_dorks", "github_dorks")
         graph.add_edge("github_dorks", "shodan_dorks")
         
-        
-
     async def _log_pentest(self):
         pass
-    
     
     async def _run_pentest(self):
         pass

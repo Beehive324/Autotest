@@ -1,37 +1,85 @@
 from langchain_core.messages import AIMessage, HumanMessage
-from tools import recontools
+#from tools import recontools
 from langgraph.graph import StateGraph, END
-from memory.state import ReconState, PenTestState
-from typing import List, Tool
+from ...state import State
+from typing import List, Dict, Optional, Type
+from langchain.tools import Tool
+from pydantic import BaseModel, Field
+from datetime import datetime
+from ...agents.orchestrator.memory import PenTestState
 
-
-class PlanningAgent:
+class Planner:
     def __init__(self):
-        self, 
-        
-        self._tools: list = [
+        self._tools: list = []
+    
+    async def _planning_phase(self, state: PenTestState) -> PenTestState:
+        """Initial planning phase to set up the pentest"""
+        state.planning_results = {
+            "start_time": datetime.now(),
+            "scope": "Initial scope defined",
+            "objectives": ["Identify vulnerabilities", "Assess security posture"]
+        }
+        return state
+    
+    async def _risk_assessment(self, state: PenTestState) -> PenTestState:
+        """Perform initial risk assessment"""
+        if not state.planning_results:
+            state.planning_results = {}
             
-        ]
-     
-    async def get_tools(self) -> List(Tool):
-        return self._tools
+        state.planning_results["risk_assessment"] = {
+            "critical_assets": [],
+            "threat_actors": [],
+            "attack_vectors": [],
+            "risk_level": "medium"
+        }
+        return state
+    
+    async def _define_scope(self, state: PenTestState) -> PenTestState:
+        """Define the scope of the pentest"""
+        if not state.planning_results:
+            state.planning_results = {}
+            
+        state.planning_results["scope"] = {
+            "targets": [state.ip_port],
+            "exclusions": [],
+            "testing_methods": ["automated", "manual"],
+            "timeline": "1 week"
+        }
+        return state
+    
+    def _create_graph(self) -> StateGraph:
+        graph = StateGraph(PenTestState)
+        graph.add_node("planning_phase", self._planning_phase)
+        graph.add_node("risk_assessment", self._risk_assessment)
+        graph.add_node("scope_definition", self._define_scope)
+        return graph
+    
+    def add_graph_edges(self, graph):
+        graph.add_edge("planning_phase", "risk_assessment")
+        graph.add_edge("risk_assessment", "scope_definition")
+        graph.add_edge("scope_definition", END)
+    
+    async def run_planning(self, state: PenTestState) -> PenTestState:
+        """Run the complete planning phase"""
+        graph = self._create_graph()
+        self.add_graph_edges(graph)
+        compiled_graph = graph.compile()
+        return await compiled_graph.ainvoke(state)
     
     
-    async def _start_planning_(self, state: ReconState):
+    
+    async def _start_planning_(self, state: State):
         pass
     
     
     
     def _create_graph_(self) -> StateGraph:
-        graph = StateGraph(ReconState)
+        graph = StateGraph(State)
         graph.add_node("start", _start_planning_)
         graph.add_node("end", END)
         
         
     
-    def add_graph_edges(self, graph):
-        graph.add_edge("start", "end")
-        
     async def _run_planning(self, graph):
         return graph.compile()
     
@@ -41,7 +89,7 @@ class PlanningAgent:
 
 # local testing
 if __name__ == "__main__":
-    planner = PlanningAgent()
+    planner = Planner()
     print(planner.get_tools())
     
     

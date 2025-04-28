@@ -3,25 +3,26 @@ from langchain_core.tools import tool
 import requests
 from pydantic import BaseModel, Field
 import sublist3r
-from agents.memory.state import PenTestState
-from prompts import enum_prompt
-from typing import List, Tool
+from ...state import PenTestState
+from typing import List
+from langchain.tools import Tool
 from langgraph.graph import StateGraph, END
-from attacking_phase.tools.attacktools import SQL_Injection, XSS_attack, CSRF_attack, ShellShock, BinaryAnalysis
+#from attacking_phase.tools.attacktools import SQL_Injection, XSS_attack, CSRF_attack, ShellShock, BinaryAnalysis
 
 
 class Attacker:
     def __init__(self):
-        self._tools: list = [
-            SQL_Injection,
-            XSS_attack,
-            CSRF_attack,
-            ShellShock,
-            BinaryAnalysis
-        ]
+        self._tools: list[Tool] = []
+        #self._tools: list = [
+         #   SQL_Injection,
+           # XSS_attack,
+          #  CSRF_attack,
+         #   ShellShock,
+           # BinaryAnalysis
+        #]
     
-    async def get_tools(self) -> List[Tool]:
-        return self._tools
+   # async def get_tools(self) -> List[Tool]:
+        #return self._tools
     
     async def _plan_attack_(self, state: PenTestState):
         pass

@@ -5,16 +5,17 @@ from pydantic import BaseModel, Field
 from typing import Optional, Type
 
 
+
 class Report(BaseModel):
     report: str = Field(description="report to be written given pentest results")
 
 
 class WriteReport(BaseTool):
-    name = "Write Report Tool"
-    description = "tool to write a report"
+    name: str = "Write Report Tool"
+    description: str = "tool to write a report"
     args_schema: Type[BaseModel] = Report
     
-    
+ 
     def _run(self, report: str) -> str:
         pass
     

@@ -1,5 +1,10 @@
 #API using flask
-import flask
+from flask import Flask
+import requests
+import request 
+import jsonify
+
+app  = Flask(__name__)
 
 
 @app.route('/', methods=['GET'])

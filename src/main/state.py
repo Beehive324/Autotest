@@ -8,24 +8,47 @@ from langchain_core.messages import BaseMessage, AnyMessage
 from typing_extensions import TypedDict, Annotated, Sequence, List, Literal, Optional, Dict
 import operator
 
-
 #storage for the MAS System, data that the MAS System will hold
-#import
 @dataclass
 class State:
    IP_Port : str
   
+@dataclass
+class CRSFState:
+    vulnerabilities: List[str]
+    finding: List[str]
+    
+ 
+@dataclass
+class XSSState:
+    vulnerabilities: List[str]
+    url: str
+    payloads: List[str]
+    url_contents: str
+    
 
 @dataclass
-class PenTestState:
-    vulnerabilities: list
-    domains: list
-    emails: list
-    passwords: list
-    services: list
+class ReconState:
+    domain: str
+    ip: str
+    vulnerabilities: List[str]
+    
+
+@dataclass
+class ReportState:
+    vulnerabilties: List[str]
     report: str
-    ports: list
-    binary_contents: list #these can be stored in a hashmap e.g {ELF_HEADERS: binary_contents}
+    
+@dataclass
+class PenTestState:
+    vulnerabilities: List[str]
+    domains: List[str]
+    emails: List[str]
+    passwords: List[str]
+    services: List[str]
+    report: List[str]
+    ports: List[str]
+    binary_contents: List[str] #these can be stored in a hashmap e.g {ELF_HEADERS: binary_contents}
 
 
 class AgentState(TypedDict):

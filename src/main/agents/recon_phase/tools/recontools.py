@@ -1,27 +1,30 @@
 from langchain.agents import tool
-from typing import list
 from datetime import datetime
 from langchain_core.tools import tool
 import requests
 import sublist3r
 import nmap
 import dns.resolver
-from memory.state import ReconState
+from ..state import ReconState
 from langchain_ollama import ChatOllama
-from prompts import enum_prompt
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
-from typing import Optional, Type
+from typing import Optional, Type, List, Dict
 from tavily import TavilyClient
 import logging
-import mylib
-import sublist3r
-import nmap
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-tavily_client = TavilyClient(api_key=api_key)
+# Initialize Tavily client with API key from environment variable
+tavily_api_key = os.getenv('TAVILY_API_KEY')
+if not tavily_api_key:
+    raise ValueError("TAVILY_API_KEY environment variable is not set. Please set it to your Tavily API key.")
+tavily_client = TavilyClient(api_key=tavily_api_key)
 
 #Defining tools using a subclass BaseTool Approach
 #Nmap Input takes the ip address
@@ -41,8 +44,8 @@ class DorksInput(BaseModel):
     
 #carrying out web search using tavily
 class WebSearch(BaseTool):
-    name = "web search"
-    description ="web search"
+    name: str = Field(default="web search", description="web search")
+    description: str = Field(default="web search", description="web search")
     args_schema: Type[BaseModel] = DorksInput
     
     def _run(self, dorks: List[str]) -> str:
@@ -58,7 +61,7 @@ class WebSearch(BaseTool):
         
         return output
         
-    async def _run(self, dorks: List[str]) -> str:
+    async def _arun(self, dorks: List[str]) -> str:
         logging.info(f"Running web search asynchronously on the following {dorks}....")
         output = []
         for dork in dorks:
@@ -73,21 +76,31 @@ class WebSearch(BaseTool):
 
 #tool to use nmap
 class Nmap(BaseTool):
-    name = "nmap"
-    description = "uses nmap to discover the target's IP address based on a network segment"
+    name: str = Field(default="nmap", description="uses nmap to discover the target's IP address based on a network segment")
+    description: str = Field(default="uses nmap to discover the target's IP address based on a network segment")
     args_schema: Type[BaseModel] = NmapInput
     
- 
-    
-    def _run(self, ip_address: str) -> str:
-        nm = nmap.PortCanner()
-        
-        nm.scan()
-     
-    
+    def _run(self, ip_address: str, scan_options: str) -> str:
+        try:
+            nm = nmap.PortScanner()
+            nm.scan(hosts=ip_address, arguments=scan_options)
+            results = []
+            for host in nm.all_hosts():
+                results.append(f"Host: {host}")
+                for proto in nm[host].all_protocols():
+                    ports = nm[host][proto].keys()
+                    for port in ports:
+                        state = nm[host][proto][port]['state']
+                        service = nm[host][proto][port]['name']
+                        results.append(f"Port: {port}/{proto}\tState: {state}\tService: {service}")
+            return "\n".join(results)
+        except Exception as e:
+            logging.error(f"Error during Nmap scan: {str(e)}")
+            return f"Nmap scan failed: {str(e)}"
+
 class Resolve(BaseTool):
-    name = "resolver"
-    description = "resolves domains"
+    name: str = Field(default="resolver", description="resolves domains")
+    description: str = Field(default="resolves domains")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> str:
@@ -97,157 +110,163 @@ class Resolve(BaseTool):
         return f"Resolving {domain_name}...."
 
 class Subdomain_Enum_CRT(BaseTool):
-    name = "domain_enumerator_crt"
-    description = "domain enumeration tool to find all subdomains give a domain using crt"
+    name: str = Field(default="domain_enumerator_crt", description="domain enumeration tool to find all subdomains give a domain using crt")
+    description: str = Field(default="domain enumeration tool to find all subdomains give a domain using crt")
     args_schema: Type[BaseModel] = DomainInput
     
-    
-    def _run(self, domain_name: str) -> str:
+    def _run(self, domain_name: str) -> List[str]:
         subdomains = set()
         
         logging.info(f"Finding and enumerating subdomains for {domain_name}")
         
         try:
-            response = requests.get(f"https://crt.sh/?q=%.{url}&output=json")
+            response = requests.get(f"https://crt.sh/?q=%.{domain_name}&output=json")
             if response.status_code == 200:
                 json_data = response.json()
                 if json_data:
                     for entry in json_data:
-                        subdomain = entr["name_value"].lower()
-                        if not subdomain.startswith("www.") and not subdomain.starswith("*.") and subdomain.endswith(f".{url}"):
+                        subdomain = entry["name_value"].lower()
+                        if not subdomain.startswith("www.") and not subdomain.startswith("*.") and subdomain.endswith(f".{domain_name}"):
                             subdomains.add(subdomain)
                             logging.info(f"Successfully discovered {subdomain}")
+            return list(subdomains)
         except Exception as e:
-            logging.info("Error in enumeration using CRT")
-                            
-                
+            logging.error(f"Error in enumeration using CRT: {str(e)}")
+            return []
+
 class Subdomain_Enum_gobuster(BaseTool):
-    name = "domain_enumerator_gobuster"
-    description = "domain enumeration tool using gobuster"
+    name: str = Field(default="domain_enumerator_gobuster", description="domain enumeration tool using gobuster")
+    description: str = Field(default="domain enumeration tool using gobuster")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> str:
         gobuster_command = f"gobuster dns -d {domain_name}"
-        pass
+        return f"Running gobuster on {domain_name}..."
 
 
 class Subdomain_Enum_findomain(BaseTool):
-    name = "domain_enumerator_findomain"
-    description = "domain enumeration tool using findomain"
+    name: str = Field(default="domain_enumerator_findomain", description="domain enumeration tool using findomain")
+    description: str = Field(default="domain enumeration tool using findomain")
     args_schema: Type[BaseModel] = DomainInput
     
-    
     def _run(self, domain_name: str) -> str:
-        logging.info(f"Running subdomain enmueration on {domain_name}...")
-        pass
+        logging.info(f"Running subdomain enumeration on {domain_name}...")
+        return f"Running findomain on {domain_name}..."
     
     async def _arun(self, domain_name: str) -> str:
-        pass
+        return await self._run(domain_name)
 
 
 class Subdomain_Enum_amass(BaseTool):
-    nmae = "domain_enumerator_amass"
-    description = "domain enumeration tool using amass"
+    name: str = Field(default="domain_enumerator_amass", description="domain enumeration tool using amass")
+    description: str = Field(default="domain enumeration tool using amass")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> str:
-        pass
+        return f"Running amass on {domain_name}..."
     
     async def _arun(self, domain_name: str) -> str:
-        pass
+        return await self._run(domain_name)
 
 
 class Subdomain_Enum_wayback(BaseTool):
-    name = "domain_enumerator_wayback"
-    description = "domain enumeration tool using wayback urls"
+    name: str = Field(default="domain_enumerator_wayback", description="domain enumeration tool using wayback urls")
+    description: str = Field(default="domain enumeration tool using wayback urls")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> str:
-        pass
+        return f"Running wayback search on {domain_name}..."
     
     async def _arun(self, domain_name: str) -> str:
-        pass
+        return await self._run(domain_name)
     
    
 class Subdomain_Enum_sublist3r(BaseTool):
-    name = "domain_enumerator_3listr"
-    description = "domain enumeration using sublist3r"
+    name: str = Field(default="domain_enumerator_3listr", description="domain enumeration using sublist3r")
+    description: str = Field(default="domain enumeration using sublist3r")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> List[str]:
         subdomains = set()
         logging.info(f"Enumerating domain: {domain_name} using sublist3r")
         subdomains = sublist3r.main(f'{domain_name}')
-        
-        return subdomains
+        return list(subdomains)
     
     async def _arun(self, domain_name: str) -> List[str]:
-        subdomains = set()
-        logging.info(f"Enumerating domain: {domain_name} asynchronously using sublist3r")
-        subdomains = sublist3r.main(f'{domain_name}')
-        
-        return subdomains
+        return await self._run(domain_name)
 
 class GoogleDorks(BaseTool):
-    name = "google dorks"
-    description = "forms google dorks in order to find out specific information"
+    name: str = Field(default="google dorks", description="forms google dorks in order to find out specific information")
+    description: str = Field(default="forms google dorks in order to find out specific information")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> List[str]:
         dorks = [
-            
+            f"site:{domain_name}",
+            f"site:{domain_name} inurl:admin",
+            f"site:{domain_name} inurl:login",
+            f"site:{domain_name} filetype:pdf",
+            f"site:{domain_name} intitle:\"index of\"",
+            f"site:{domain_name} intext:password",
+            f"site:{domain_name} inurl:wp-content",
+            f"site:{domain_name} inurl:wp-admin",
         ]
-        
-        return f"Forming google dorks for {domain_name}"
+        return dorks
     
-    async def_run(self, domain_name: str) -> str:
-        return f"Forming google dorks for {domain_name}"
+    async def _arun(self, domain_name: str) -> List[str]:
+        return await self._run(domain_name)
 
 
 class GitHubDorks(BaseTool):
-    name = "Github dorks"
-    description = "forms github dorks in order to find out repo information, codebases"
+    name: str = Field(default="Github dorks", description="forms github dorks in order to find out repo information, codebases")
+    description: str = Field(default="forms github dorks in order to find out repo information, codebases")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> List[str]:
         github_dorks = [
-            
+            f'"{domain_name}" password',
+            f'"{domain_name}" secret',
+            f'"{domain_name}" api_key',
+            f'"{domain_name}" apikey',
+            f'"{domain_name}" token',
+            f'"{domain_name}" config',
+            f'"{domain_name}" credentials',
+            f'org:{domain_name}',
         ]
-        
-        return f"Forming Github dorks for {domain_name}..."
+        return github_dorks
     
-    async def_run(self, domain_name: str) -> str:
-        return f"Forming Github dorks for {domain_name}..."
+    async def _arun(self, domain_name: str) -> List[str]:
+        return await self._run(domain_name)
 
 
 class ShodanDorks(BaseTool):
-    name = "Shodan Dorks"
-    description = "forms shodan dorks given a domain input"
+    name: str = Field(default="Shodan Dorks", description="forms shodan dorks given a domain input")
+    description: str = Field(default="forms shodan dorks given a domain input")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> List[str]:
         shodan_dorks = [
-            
+            f'hostname:"{domain_name}"',
+            f'ssl:"{domain_name}"',
+            f'org:"{domain_name}"',
+            f'http.title:"{domain_name}"',
+            f'net:"{domain_name}"',
         ]
-        
-        return f"Forming shodan dorks for {domain_name}..."
+        return shodan_dorks
     
-    async def_run(self, domain_name: str) -> str:
-        
-        return f"Formind shodan dorks for {domain_nmae}"
+    async def _arun(self, domain_name: str) -> List[str]:
+        return await self._run(domain_name)
 
 
 class APIDiscovery(BaseTool):
-    name = "API Discovery"
-    description = "tools to discover apis given a domain as input"
+    name: str = Field(default="API Discovery", description="tools to discover apis given a domain as input")
+    description: str = Field(default="tools to discover apis given a domain as input")
     args_schema: Type[BaseModel] = DomainInput
     
     def _run(self, domain_name: str) -> List[str]:
-        
-        return f"Discovering apis for {domain_name}"
+        return [f"Discovering APIs for {domain_name}..."]
     
-    async def_run(self, domain_name: str) -> List[str]:
-        
-        return f"Discovering apis for {domain_name}"
+    async def _arun(self, domain_name: str) -> List[str]:
+        return await self._run(domain_name)
 
 

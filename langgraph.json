@@ -1,11 +1,11 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "main": "./src/main/graph.py:graph"
+    "main": "src.main.graph:graph"
   },
   "env": ".env",
   "python_version": "3.11",
   "dependencies": [
-    "."
+    "python-nmap"
   ]
 }

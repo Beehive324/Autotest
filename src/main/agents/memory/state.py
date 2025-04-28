@@ -8,7 +8,6 @@ from langchain_core.messages import BaseMessage, AnyMessage
 from typing_extensions import TypedDict, Annotated, Sequence, List, Literal, Optional, Dict
 import operator
 
-
 #storage for the MAS System, data that the MAS System will hold
 @dataclass
 class State:
@@ -19,7 +18,7 @@ class CRSFState:
     vulnerabilities: List[str]
     finding: List[str]
     
-    
+ 
 @dataclass
 class XSSState:
     vulnerabilities: List[str]
@@ -34,8 +33,12 @@ class ReconState:
     ip: str
     vulnerabilities: List[str]
     
+
+@dataclass
+class ReportState:
+    vulnerabilties: List[str]
+    report: str
     
-     
 @dataclass
 class PenTestState:
     vulnerabilities: List[str]

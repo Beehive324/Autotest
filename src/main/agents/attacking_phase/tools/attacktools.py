@@ -19,7 +19,6 @@ from playwright.sync_api import sync_playwright
 import requests
 
 
-
 class URL(BaseModel):
     url: str = Field(description="url input")
 
@@ -33,7 +32,7 @@ class SQL_Injection(BaseTool):
     def _run(self, url: str) -> str:
         pass
     
-    async def_run(self, url: str) -> str:
+    async def _arun(self, url: str) -> str:
         pass
 
 
@@ -45,17 +44,14 @@ class XSS(BaseTool):
     
     
     async def format_url(self, url: str) -> str:
-        
-        parsed_url = urlparse(domain)
-        
+        parsed_url = urlparse(url)
         netloc = parsed_url.netloc
         
         if netloc.startswith('wwww.'):
             netloc = netloc[4:]
         
         return netloc
-    
-    
+
     async def scan_contents(self, url: str) -> str:
         url = format_url(url)
         response = requests.get(f'https://r.jina.ai/https://{format_domain(self.domain)}')
@@ -76,7 +72,7 @@ class XSS(BaseTool):
     def _run(self, url: str) -> str:
         pass
     
-    async def_run(self, url: str) -> str:
+    async def _arun(self, url: str) -> str:
         pass
 
 class ShellShock(BaseTool):
@@ -87,7 +83,7 @@ class ShellShock(BaseTool):
     def _run(self, url: str) -> str:
         pass
     
-    async def_run(self, url: str) -> str:
+    async def a_run(self, url: str) -> str:
         pass
 
 class BinaryAnalysis(BaseTool):
@@ -98,6 +94,6 @@ class BinaryAnalysis(BaseTool):
     def _run(self, url: str) -> str:
         return f"Running binary analysis for {url}..."
     
-    async def_run(self, url: str) -> str:
+    async def a_run(self, url: str) -> str:
         return f"Running binary analysis for {url}..."
     
