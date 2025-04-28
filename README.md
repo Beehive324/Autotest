@@ -1,5 +1,5 @@
-# Multi Agent Framework for Automated Pentesting
+Multi Agent Framework for Automated Pentesting
 
 
-![Pentesting Workflow Graph](pentest_workflow.png)
+![Graph](pentest_workflow.png)
 
