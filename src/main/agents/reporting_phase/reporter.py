@@ -27,6 +27,9 @@ class Reporter:
     async def _start_reporting_(self, state: PenTestState):
         pass
     
+    async def _finalize_report_(self, state: PenTestState):
+        pass
+    
     def _create_graph_(self) -> StateGraph:
         graph = StateGraph(PenTestState)
         graph.add_node("start", self._start_reporting_)

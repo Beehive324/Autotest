@@ -57,7 +57,7 @@ def create_workflow() -> StateGraph:
     
     # Reporting Phase Nodes
     workflow.add_node("start_reporting", initialized_agents["reporter"]._start_reporting_)
-    
+    workflow.add_node("finalize_report", initialized_agents["reporter"]._finalize_report_)
     # Add edges between phases
     # Planning Phase edges - Parallel processing
     workflow.add_edge("planning_phase", "risk_assessment")
@@ -140,7 +140,9 @@ def create_workflow() -> StateGraph:
     workflow.add_edge("binary_analysis", "start_reporting")
     
     # Reporting Phase edges
-    workflow.add_edge("start_reporting", END)
+    workflow.add_edge("start_reporting", "finalize_report")
+    
+    workflow.add_edge("finalize_report", END)
     
     # Set entry point
     workflow.set_entry_point("planning_phase")
