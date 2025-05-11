@@ -17,6 +17,8 @@ class Reporter:
         self._tools: list = [
             WriteReport
         ]
+        self.name = "reporter"
+        self.prompt = "You are a pentesting report writer. You are given a list of vulnerabilities and a report template. You need to write a report based on the vulnerabilities and the report template."
     
     async def get_tools(self) -> List[Tool]:
         return self._tools

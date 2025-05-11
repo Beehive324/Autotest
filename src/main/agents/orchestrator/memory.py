@@ -47,5 +47,7 @@ class PenTestState(BaseModel):
     successful_exploits: List[str] = []
     failed_exploits: List[str] = []
     risk_score: float = 0.0
+    remaining_steps: int
+    messages: List[str] = []
     start_time: datetime = Field(default_factory=datetime.now)
     

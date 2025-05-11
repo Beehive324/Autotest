@@ -1,6 +1,7 @@
 import click
 import requests
 from pyfiglet import Figlet
+from agents.recon_phase.recon import Recon
 
 f = Figlet(font='slant')
 
@@ -10,7 +11,8 @@ __author__ = "Fairson Soares"
 
 #reconnaisance phase tool
 def reconnaisance():
-    pass
+    recon = Recon(model='llama3:2', tools="tools")
+    
 
 #maintaining access tool
 def maintaining_access():

@@ -41,6 +41,8 @@ class Recon:
             WebSearch(),
             Masscan(),
         ]
+        self.name = "Recon"
+        self.prompt = "You are a penetration tester your task is to determine the open ports and services on the target machine as well as the version of the service the operating system, host discovery, port information, service detection, network information, service information, and other relevant information using the provided nmap tool using the provided host {ip}."
         
         self.model_with_tools = self.model.bind_tools(self.tools)
     

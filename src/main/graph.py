@@ -19,6 +19,7 @@ from .agents.attacking_phase.attacker import Attacker
 from .agents.reporting_phase.reporter import Reporter
 from IPython.display import Image, display
 from langchain_ollama import ChatOllama
+from .agents.orchestrator.orchestrator import create_supervisor
 
 
 local_model = "llama3.2"
@@ -26,7 +27,7 @@ local_model = "llama3.2"
 
 model = ChatOllama(model=local_model, temperature=1)
 
-
+#function to initialize all agents for pentesting
 def initialize_agents() -> Dict[str, Any]:
     """Initialize all agents for the pentesting workflow"""
     return {
@@ -35,21 +36,27 @@ def initialize_agents() -> Dict[str, Any]:
         "attacker": Attacker(model=model),
         "reporter": Reporter()
     }
-    
+
+
 def create_workflow() -> StateGraph:
     """Create the main pentesting workflow graph"""
-    workflow = StateGraph(PenTestState)
-    initialized_agents = initialize_agents()
     
-    # Planning Phase Nodes
-    workflow.add_node("planning_phase", initialized_agents["planner"]._planning_phase)
-    workflow.add_node("analysis_phase", initialized_agents["recon"]._analyze_ports)
-    workflow.add_node("port_discovery", initialized_agents["recon"]._start_recon)
-    
-    workflow.add_edge(START,"port_discovery")
-    workflow.add_edge("port_discovery", "analysis_phase")
-    workflow.add_edge("analysis_phase", "planning_phase")
-    workflow.add_edge("planning_phase", END)
+    agents = initialize_agents()
+    workflow = create_supervisor(
+        [
+            agents["planner"],
+            agents["recon"],
+            agents["attacker"],
+            agents["reporter"]
+         ],
+        model=model,
+        prompt=(
+            "You are a Pentest orchestrator overseeing and managing a team of pentest experts"
+        ),
+        state_schema=PenTestState,
+        add_handoff_messages=True,
+        supervisor_name="Orchestrator"
+    )
     
     
     return workflow
@@ -58,9 +65,13 @@ def create_workflow() -> StateGraph:
 workflow = create_workflow()
 graph = workflow.compile()
 
+# Save the graph visualization
+graph_path = 'pentest.png'
+graph.get_graph().draw_png(graph_path)
+print(f"Graph visualization saved to: {graph_path}")
 
-#display(Image(graph.get_graph().draw_png('pentest.png')))
-
+# Display the graph
+display(Image(graph_path))
 
 # Export the graph
 __all__ = ["graph"]

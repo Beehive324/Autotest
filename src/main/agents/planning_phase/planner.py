@@ -14,6 +14,7 @@ class Planner:
     def __init__(self, model):
         self._tools: list = []
         self.model = model
+        self.name = "Planner"
     
     
     def _planning_phase(self, state: PenTestState) -> PenTestState:
@@ -91,21 +92,16 @@ class Planner:
         pass
     
     
-    
     def _create_graph_(self) -> StateGraph:
         graph = StateGraph(State)
         graph.add_node("start", _start_planning_)
         graph.add_node("end", END)
         
-        
-    
     async def _run_planning(self, graph):
         return graph.compile()
     
     
     
-    
-
 # local testing
 if __name__ == "__main__":
     planner = Planner()
