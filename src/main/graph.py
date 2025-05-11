@@ -144,6 +144,8 @@ initial_state = {
     "ip_port": "localhost:"
 }
 
+
+#streaming to the terminal in real time
 for chunk in graph.stream(
     initial_state,
     subgraphs=True,
