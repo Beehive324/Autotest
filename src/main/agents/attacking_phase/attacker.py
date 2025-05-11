@@ -30,6 +30,11 @@ class Attacker:
         ]
         self.name = "Attacker"
         self.prompt = "You are a professional pentester your task is to carry out a plan with the given tools to attack the target system, knowing the following information: open ports: {state['open_ports']} ip_port: {state['ip_port']} vulnerabilities: {state['vulnerabilities']}"
+    
+    
+    def get_tools(self) -> List[Tool]:
+        return self.tools
+    
     async def _plan_attack_(self, state: PenTestState):
         
         messages = state['messages']

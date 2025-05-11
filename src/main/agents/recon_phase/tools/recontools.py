@@ -32,7 +32,14 @@ tavily_client = TavilyClient(api_key=tavily_api_key)
 class NmapInput(BaseModel):
     ip_address: str = Field(..., description="The IP address or hostname to scan")
     scan_options: str = Field(default="-sV -sC -O -p-", description="Nmap scan options")
-    
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "ip_address": "192.168.1.1",
+                "scan_options": "-sV -sC -O -p-"
+            }
+        }
 
 #Resolver Input takes the domain name
 class DomainInput(BaseModel):

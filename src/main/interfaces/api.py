@@ -1,7 +1,8 @@
 #API using flask
+"""
 from flask import Flask
 import requests
-import request 
+import requests 
 import jsonify
 from pyfiglet import Figlet
 
@@ -41,3 +42,4 @@ def reporting():
 
 if __name__ == '__main__':
     app.run(debug=True)
+"""

@@ -46,7 +46,7 @@ class Recon:
         
         self.model_with_tools = self.model.bind_tools(self.tools)
     
-    async def get_tools(self) -> List[Tool]:
+    def get_tools(self) -> List[Tool]:
         return self.tools
 
     def _start_recon(self, state: PenTestState):

@@ -39,6 +39,7 @@ class Subdomain(BaseModel):
 class PenTestState(BaseModel):
     """State for the pentesting workflow"""
     ip_port: str
+    input_message: str
     planning_results: Dict = {}
     vulnerabilities: List[Vulnerability] = []
     services: List[Service] = []
