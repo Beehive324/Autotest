@@ -14,23 +14,24 @@ from typing import Optional, Type, List, Dict
 from tavily import TavilyClient
 import logging
 import os
+import masscan
 from dotenv import load_dotenv
+import conf
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Initialize Tavily client with API key from environment variable
+#Tools for Reconnaisance Phase, in order ot perform a full scan of the target and identify all open ports and services
 tavily_api_key = os.getenv('TAVILY_API_KEY')
 if not tavily_api_key:
     raise ValueError("TAVILY_API_KEY environment variable is not set. Please set it to your Tavily API key.")
 tavily_client = TavilyClient(api_key=tavily_api_key)
 
-#Defining tools using a subclass BaseTool Approach
 #Nmap Input takes the ip address
 class NmapInput(BaseModel):
-    ip_address: str = Field(description="Target's IP address")
-    scan_options: str = Field(description="Scan options to be used for nmap")
+    ip_address: str = Field(..., description="The IP address or hostname to scan")
+    scan_options: str = Field(default="-sV -sC -O -p-", description="Nmap scan options")
     
 
 #Resolver Input takes the domain name
@@ -41,7 +42,7 @@ class DomainInput(BaseModel):
 class DorksInput(BaseModel):
     dorks: List[str] = Field(description="Dorks to carry out web search")
     
-    
+
 #carrying out web search using tavily
 class WebSearch(BaseTool):
     name: str = Field(default="web search", description="web search")
@@ -74,16 +75,87 @@ class WebSearch(BaseTool):
         
         return output
 
+
+class Curl(BaseTool):
+    pass
+
+class Wget(BaseTool):
+    pass
+
+class Tcpdump(BaseTool):
+    pass
+
+class Whois(BaseTool):
+    pass
+
+class Dmitry(BaseTool):
+    pass
+
+class Dnsenum(BaseTool):
+    pass
+
+class Netdiscover(BaseTool):
+    pass
+
+
+class Amap(BaseTool):
+    pass
+
+class Enum4linux(BaseTool):
+    pass
+
+class Smbclient(BaseTool):
+    pass
+
+class SSLscan(BaseTool):
+    pass
+
+class Amass(BaseTool):
+    pass
+
+class SSLscan(BaseTool):
+    pass
+
+class SpiderFoot(BaseTool):
+    pass
+
+class Fierce(BaseTool):
+    pass
+
+
+
+class Niktoscan(BaseTool):
+    name: str = Field(default="niktoscan", description="uses niktoscan to scan the ports")
+    description: str = Field(default="uses niktoscan to scan the ports")
+    args_schema: Type[BaseModel] = NmapInput
+    
+    def _run(self, ip_address: str) -> str:
+        pass 
+        
+class Masscan(BaseTool):
+    name: str = Field(default="masscan", description="uses masscan to scan the ports")
+    description: str = Field(default="uses masscan to scan the ports")
+    args_schema: Type[BaseModel] = NmapInput
+    
+    def _run(self, ip_address: str) -> str:
+        mas = masscan.PortScanner().masscan(ip_address, ports, arguments='--max-rate 1000')
+        print(mas.scan_result)
+        return mas.scan_result 
+    
+    async def _arun(self, ip_address: str) -> str:
+        return await self._run(ip_address)
+
+
 #tool to use nmap
 class Nmap(BaseTool):
-    name: str = Field(default="nmap", description="uses nmap to discover the target's IP address based on a network segment")
+    name: str = Field(default="nmap", description="uses nmap to deliver a security scan")
     description: str = Field(default="uses nmap to discover the target's IP address based on a network segment")
     args_schema: Type[BaseModel] = NmapInput
     
-    def _run(self, ip_address: str, scan_options: str) -> str:
+    def _run(self, ip_address: str) -> str:
         try:
             nm = nmap.PortScanner()
-            nm.scan(hosts=ip_address, arguments=scan_options)
+            nm.scan(ip_address,'8020, 8022, 8025, 8050, 8443, 9306',arguments='-sV')
             results = []
             for host in nm.all_hosts():
                 results.append(f"Host: {host}")
@@ -97,7 +169,21 @@ class Nmap(BaseTool):
         except Exception as e:
             logging.error(f"Error during Nmap scan: {str(e)}")
             return f"Nmap scan failed: {str(e)}"
-
+    
+    async def _arun(self, ip_address: str) -> str:
+        results = []
+        try:
+            nm = nmap.PortScanner()
+            nm.scan(ip_address)
+            for host in nm.all_hosts():
+                results.append(f"Host: {host}")
+            
+            return ''.join(results)
+        except Exception as e:
+            logging.error(f"An error has occured")
+        
+        
+           
 class Resolve(BaseTool):
     name: str = Field(default="resolver", description="resolves domains")
     description: str = Field(default="resolves domains")

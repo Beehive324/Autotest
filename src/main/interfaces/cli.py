@@ -8,8 +8,6 @@ f = Figlet(font='slant')
 __author__ = "Fairson Soares"
 
 
-
-
 #reconnaisance phase tool
 def reconnaisance():
     pass
@@ -44,5 +42,9 @@ def main():
 if __name__ == '__main__':
     print(f.renderText('AutoTest'))
    
+
+
+
+
 
 

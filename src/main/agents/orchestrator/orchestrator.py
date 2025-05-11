@@ -17,7 +17,7 @@ class PenTestOrchestrator:
             'recon': Recon(),
             'reporter': Reporter()
         }
-    
+         
     def _create_graph(self, agents):
         graph = StateGraph(PenTestState)
         

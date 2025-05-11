@@ -12,7 +12,8 @@ import operator
 @dataclass
 class State:
    IP_Port : str
-  
+
+    
 @dataclass
 class CRSFState:
     vulnerabilities: List[str]
@@ -38,7 +39,7 @@ class ReconState:
 class ReportState:
     vulnerabilties: List[str]
     report: str
-    
+
 @dataclass
 class PenTestState:
     vulnerabilities: List[str]

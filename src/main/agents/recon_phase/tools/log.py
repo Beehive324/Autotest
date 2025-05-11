@@ -10,8 +10,6 @@ class Log(TypedDict):
     log_content: str
 
 
-
-
 def main():
     logging.basicConfig(filename-'logger', level=logging.INFO)
     logger.info('Started')
