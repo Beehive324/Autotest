@@ -14,13 +14,12 @@ from langchain_core.tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
+#allow our agent to execute commands from the terminal
 
-
-
+#Shell tools for the agent to use 
 
 class ShellInput(BaseModel):
     command: str = Field(decription="Command to be executed")
-    
     
     
 class ShellTool(BaseTool):
@@ -29,4 +28,12 @@ class ShellTool(BaseTool):
     args_schema: Type[BaseModel] = ShellInput
     
     def _run(self, command: str) -> str:
-        try:
+        pass
+
+class Nmap(BaseTool):
+    pass
+
+class MassScan(BaseTool):
+    pass
+
+

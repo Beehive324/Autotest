@@ -100,8 +100,7 @@ class Planner:
     async def _run_planning(self, graph):
         return graph.compile()
     
-    
-    
+      
 # local testing
 if __name__ == "__main__":
     planner = Planner()

@@ -17,10 +17,13 @@ import os
 import masscan
 from dotenv import load_dotenv
 import conf
+import subprocess
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+
 
 #Tools for Reconnaisance Phase, in order ot perform a full scan of the target and identify all open ports and services
 tavily_api_key = os.getenv('TAVILY_API_KEY')
@@ -83,33 +86,115 @@ class WebSearch(BaseTool):
         return output
 
 
+#subprocess tools
+class UrlInput(BaseModel):
+    url: str = Field("Input for curl")
+
 class Curl(BaseTool):
-    pass
+    name: str = Field(default="curl command", description="curl")
+    description: str = Field(default="curl", description="send curl to url")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    
+    def _run(self, url: str) -> str:
+        out = subprocess.check_output(["curl", "-X", "POST", "-u", "opt:gggguywqydfydwfh"], url)
+        subprocess.run(out)
+        
+    
+    async def _arun(self, url: str) -> str:
+        command = ["curl", url]
+        out = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        output = out.stdout
+        
+        return {
+            
+            "result": output
+        }
+                                      
 
 class Wget(BaseTool):
-    pass
+    name: str = Field(default="wedget command", description="wedget")
+    description: str = Field(default="wedget", description="wedget command to focus on file downloading")
+    arg_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def _run(self, url: str) -> str:
+        pass
 
 class Tcpdump(BaseTool):
-    pass
+    name: str = Field(default="tcpdump command", description="tcpdump")
+    description: str = Field(default="tcpdump", description="tcpdump command")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def a_run(self, url: str) -> str:
+        pass
 
 class Whois(BaseTool):
-    pass
+    name: str = Field(default="whois command", description="whois")
+    description: str = Field(default="whois", description="whois command")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def a_run(self, url: str) -> str:
+        pass
 
 class Dmitry(BaseTool):
-    pass
+    name: str = Field(default="dmitry command", description="dmitry")
+    description: str = Field(default="dmitry", description="dmitir command")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def a_run(self, url: str) -> str:
+        pass
 
 class Dnsenum(BaseTool):
-    pass
+    name: str = Field(default="dnsenum", description="dnsenum")
+    description: str = Field(default="dnsenum", description="dnseunm command")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def _arun(self, url: str) -> str:
+        pass
 
 class Netdiscover(BaseTool):
-    pass
-
+    name: str = Field(default="Netdiscover", description="netdiscover")
+    description: str = Field(default="netdiscover", description="netdiscover command")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def _arun(self, url: str) -> str:
+        pass
+    
+    
 
 class Amap(BaseTool):
-    pass
+    name: str = Field(default="Amap", description="amap")
+    description: str = Field(default="amap", description="amap command")
+    args_schema: Type[BaseModel] = UrlInput
+    
+    def _run(self, url: str) -> str:
+        pass
+    
+    async def _arun(self, url: str) -> str:
+        pass
 
 class Enum4linux(BaseTool):
-    pass
+    name: str = Field(default="Enum4Linux", description="Enum4Linux")
+    description: str = Field(default="enum4linux", description="enum4linux command")
 
 class Smbclient(BaseTool):
     pass

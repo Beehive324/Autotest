@@ -168,9 +168,7 @@ class Recon:
         graph.add_edge("google_dorks", "shodan_dorks")
         graph.add_edge("shodan_dorks", "port_scanning")
         graph.add_edge("port_scanning", END)
-        
-        
-    
+         
     async def run_recon(self):
         graph = self._create_graph()
         compiled_graph = graph.compile()

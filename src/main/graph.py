@@ -124,13 +124,18 @@ def create_workflow() -> StateGraph:
         prompt=(
             """You are a Pentest orchestrator overseeing and managing a team of pentest experts \n
             You are responsible for the overall direction of the pentest and the coordination of the team \n
+            And you must go through the following phases for pentesting: \n 
+            Planning \n
+            Reconnaissance \n
+            Attacking \n
+            Reporting \n    
             Use Planner to create a plan for the pentest \n
             Use Recon to gather information about the target \n
             Use Attacker to attack the target \n
             Use Reporter to report the results of the pentest"""
         ),
         add_handoff_messages=True,
-        supervisor_name="Orchestrator"
+        supervisor_name="Orchestrator",
     )
     return workflow
 
@@ -139,20 +144,38 @@ workflow = create_workflow()
 graph = workflow.compile()
 
 # Initialize state with required messages field
+"""
 initial_state = {
     "messages": [HumanMessage(content="Start pentesting on localhost")],
     "ip_port": "localhost:"
 }
 
 
+initial_state = {
+    "messages": ["Start pentesting on localhost"],  # List of strings
+    "ip_port": "localhost:",
+    "input_message": "Start pentesting on localhost",  # Required string
+    "remaining_steps": 5,  # Required integer
+    "planning_results": {},
+    "vulnerabilities": [],
+    "services": [],
+    "subdomains": [],
+    "open_ports": [],
+    "successful_exploits": [],
+    "failed_exploits": [],
+    "risk_score": 0.0
+}
+
+
 #streaming to the terminal in real time
+
 for chunk in graph.stream(
     initial_state,
     subgraphs=True,
     stream_mode="updates"
 ):
     print(chunk)
-
+"""
 # Save the graph visualization
 graph_path = 'pentest.png'
 graph.get_graph().draw_png(graph_path)
