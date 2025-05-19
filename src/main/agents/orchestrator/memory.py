@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 from datetime import datetime
-
+from langgraph.graph import MessagesState
+from langchain_core.messages import BaseMessage
 
 
 class Messages(BaseModel):
@@ -38,8 +39,7 @@ class Subdomain(BaseModel):
 
 class PenTestState(BaseModel):
     """State for the pentesting workflow"""
-    ip_port: str
-    input_message: str
+    ip_port: str = "localhost"
     planning_results: Dict = {}
     vulnerabilities: List[Vulnerability] = []
     services: List[Service] = []
@@ -48,7 +48,8 @@ class PenTestState(BaseModel):
     successful_exploits: List[str] = []
     failed_exploits: List[str] = []
     risk_score: float = 0.0
-    remaining_steps: int
-    messages: List[str] = []
+    remaining_steps: int = 5
+    messages: List[BaseMessage] = []
+    chat_history: List[BaseMessage] = []
     start_time: datetime = Field(default_factory=datetime.now)
     

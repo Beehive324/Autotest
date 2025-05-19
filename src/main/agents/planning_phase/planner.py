@@ -1,111 +1,275 @@
-from langchain_core.messages import AIMessage, HumanMessage
-#from tools import recontools
-from langgraph.graph import StateGraph, END
-from ...state import State
-from typing import List, Dict, Optional, Type
-from langchain.tools import Tool
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import Runnable
+from langchain_core.tools import BaseTool
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain_core.prompts import PromptTemplate
+from langgraph.graph import StateGraph, START, END
 from datetime import datetime
 from ...agents.orchestrator.memory import PenTestState
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from ...agents.orchestrator.memory import Messages
+
+
 
 class Planner:
     def __init__(self, model):
-        self._tools: list = []
+        """Initialize the Planner with a language model.
+        
+        Args:
+            model: The language model to use for planning and analysis
+        """
         self.model = model
         self.name = "Planner"
-    
+        self.tools = []  # Add your planning tools here
+        
+        # Create the base prompt template for the ReAct agent
+        self.prompt = PromptTemplate.from_template(
+            """You are a pentest expert. You are responsible for planning the pentest.
+            You have access to the following tools:
+
+            {tools}
+
+            Use the following format:
+
+            Question: the input question you must answer
+            Thought: you should always think about what to do
+            Action: the action to take, should be one of [{tool_names}]
+            Action Input: the input to the action
+            Observation: the result of the action
+            ... (this Thought/Action/Action Input/Observation can repeat N times)
+            Thought: I now know the final answer
+            Final Answer: the final answer to the original input question
+
+            Begin!
+
+            Question: {input}
+            Thought:{agent_scratchpad}"""
+        )
+        
+        # Create the agent using create_react_agent
+        self.agent = create_react_agent(
+            llm=self.model,
+            tools=self.tools,
+            prompt=self.prompt,
+            stop_sequence=True
+        )
+        
+        # Create the agent executor
+        self.executor = AgentExecutor(agent=self.agent, tools=self.tools)
     
     def _planning_phase(self, state: PenTestState) -> PenTestState:
-        """Initial planning phase to set up the pentest"""
+        """Initial planning phase to set up the pentest.
         
-        planner_instructions=f"""You are tasked with creating a plan based on the findings of {state.open_ports}
-        Conduct the best way to carry out penetration testing based on these open ports
+        Args:
+            state: Current state of the penetration test
+            
+        Returns:
+            Updated state with planning results
         """
+        # Initialize messages if not present
+        if not hasattr(state, 'messages'):
+            state.messages = []
+            
+        planner_instructions = f"""You are tasked with creating a plan based on the findings of {state.open_ports}
+        Conduct the best way to carry out penetration testing based on these open ports.
+        Consider:
+        1. Common vulnerabilities for these services
+        2. Recommended testing methodologies
+        3. Priority of testing based on service criticality
+        """
+        
         state.planning_results = {
             "start_time": datetime.now(),
             "scope": "Initial scope defined",
             "objectives": ["Identify vulnerabilities", "Assess security posture"]
         }
         
-        system_message = planner_instructions
-        
         plan = self.model.invoke([
             SystemMessage(content=planner_instructions),
-            HumanMessage(content="Analyze the following nmap results")
+            HumanMessage(content=f"Analyze the following nmap results and create a detailed testing plan: {state.open_ports}")
         ])
         
-        state.planning_results = {
-            "planning_results": plan
-        }
+        state.planning_results.update({
+            "planning_results": plan,
+            "last_updated": datetime.now()
+        })
+        
+        # Add the plan to messages
+        state.messages.append(AIMessage(content=str(plan)))
         
         return state
     
     async def _risk_assessment(self, state: PenTestState) -> PenTestState:
-        """Perform initial risk assessment"""
+        """Perform initial risk assessment.
+        
+        Args:
+            state: Current state of the penetration test
+            
+        Returns:
+            Updated state with risk assessment results
+        """
         if not state.planning_results:
             state.planning_results = {}
             
-        state.planning_results = {
+        risk_instructions = f"""Based on the open ports {state.open_ports}, assess the following:
+        1. Critical assets that might be exposed
+        2. Potential threat actors
+        3. Possible attack vectors
+        4. Overall risk level
+        """
+        
+        risk_assessment = self.model.invoke([
+            SystemMessage(content=risk_instructions),
+            HumanMessage(content="Provide a detailed risk assessment")
+        ])
+            
+        state.planning_results.update({
             "critical_assets": [],
             "threat_actors": [],
             "attack_vectors": [],
-            "risk_level": "medium"
-        }
+            "risk_level": "medium",
+            "risk_assessment": risk_assessment,
+            "last_updated": datetime.now()
+        })
+        
+        # Add the risk assessment to messages
+        state.messages.append(AIMessage(content=str(risk_assessment)))
+        
         return state
     
     async def _define_scope(self, state: PenTestState) -> PenTestState:
-        """Define the scope of the pentest"""
+        """Define the scope of the pentest.
+        
+        Args:
+            state: Current state of the penetration test
+            
+        Returns:
+            Updated state with defined scope
+        """
         if not state.planning_results:
             state.planning_results = {}
             
-        state.planning_results["scope"] = {
-            "targets": state.ip_port,
-            "exclusions": [],
-            "testing_methods": ["automated", "manual"],
-        }
+        scope_instructions = f"""Based on the target {state.ip_port}, define a clear scope including:
+        1. Specific targets to test
+        2. Any exclusions or limitations
+        3. Testing methodologies to be used
+        """
+        
+        scope_definition = self.model.invoke([
+            SystemMessage(content=scope_instructions),
+            HumanMessage(content="Define the testing scope")
+        ])
+            
+        state.planning_results.update({
+            "scope": {
+                "targets": state.ip_port,
+                "exclusions": [],
+                "testing_methods": ["automated", "manual"],
+                "scope_definition": scope_definition
+            },
+            "last_updated": datetime.now()
+        })
+        
+        # Add the scope definition to messages
+        state.messages.append(AIMessage(content=str(scope_definition)))
+        
         return state
     
     def _create_graph(self) -> StateGraph:
+        """Create the planning workflow graph.
+        
+        Returns:
+            StateGraph: The configured planning workflow
+        """
         graph = StateGraph(PenTestState)
         graph.add_node("planning_phase", self._planning_phase)
         graph.add_node("risk_assessment", self._risk_assessment)
         graph.add_node("scope_definition", self._define_scope)
         return graph
     
-    def add_graph_edges(self, graph):
+    def add_graph_edges(self, graph: StateGraph) -> None:
+        """Add edges to the planning workflow graph.
+        
+        Args:
+            graph: The StateGraph to add edges to
+        """
+        graph.add_edge(START, "planning_phase")
         graph.add_edge("planning_phase", "risk_assessment")
         graph.add_edge("risk_assessment", "scope_definition")
         graph.add_edge("scope_definition", END)
     
-    async def run_planning(self, state: PenTestState) -> PenTestState:
-        """Run the complete planning phase"""
-        graph = self._create_graph()
-        self.add_graph_edges(graph)
-        compiled_graph = graph.compile()
-        return await compiled_graph.ainvoke(state)
-    
-    
-    
-    async def _start_planning_(self, state: State):
-        pass
-    
-    
-    def _create_graph_(self) -> StateGraph:
-        graph = StateGraph(State)
-        graph.add_node("start", _start_planning_)
-        graph.add_node("end", END)
+    async def ainvoke(self, state: PenTestState, config: Optional[Dict] = None, **kwargs) -> PenTestState:
+        """Asynchronously invoke the planner agent.
         
-    async def _run_planning(self, graph):
-        return graph.compile()
+        Args:
+            state: The current state of the pentest
+            config: Optional configuration dictionary
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            Updated state after planning phase
+        """
+        try:
+            # Initialize messages if not present
+            if not hasattr(state, 'messages'):
+                state.messages = []
+                
+            # First run the detailed planning workflow
+            graph = self._create_graph()
+            self.add_graph_edges(graph)
+            compiled_graph = graph.compile()
+            state = await compiled_graph.ainvoke(state)
+            
+            # Then run the ReAct agent for any additional planning
+            input_data = {
+                "input": state.messages[-1].content if state.messages else "Start planning phase",
+                "agent_scratchpad": ""
+            }
+            
+            result = await self.executor.ainvoke(input_data)
+            state.messages.append(AIMessage(content=result["output"]))
+            
+            return state
+            
+        except Exception as e:
+            error_message = f"Error in planning phase: {str(e)}"
+            if not hasattr(state, 'messages'):
+                state.messages = []
+            state.messages.append(AIMessage(content=error_message))
+            return state
     
-      
-# local testing
-if __name__ == "__main__":
-    planner = Planner()
-    print(planner.get_tools())
-    
-    
+    def get_agent(self) -> Runnable:
+        """Get the agent runnable for use in the workflow.
+        
+        Returns:
+            The agent runnable
+        """
+        return self.executor
 
-        
+# For local testing
+if __name__ == "__main__":
+    from langchain_ollama import ChatOllama
+    
+    # Initialize with Ollama model
+    model = ChatOllama(model="llama2", temperature=1)
+    planner = Planner(model)
+    
+    # Create a test state with all required fields
+    test_state = PenTestState(
+        ip_port="192.168.1.1:80,443",
+        open_ports=[80, 443],
+        input_message="Start pentesting on 192.168.1.1",
+        remaining_steps=5,
+        planning_results={},
+        vulnerabilities=[],
+        services=[],
+        subdomains=[],
+        successful_exploits=[],
+        failed_exploits=[],
+        risk_score=0.0,
+        messages=[]  # Initialize messages list
+    )
+    
+    # Run planning (in async context)
+    import asyncio
+    result = asyncio.run(planner.ainvoke(test_state))
+    print("Planning Results:", result.planning_results) 

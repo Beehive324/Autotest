@@ -25,6 +25,8 @@ from .agents.recon_phase.tools.recontools import Nmap
 from langchain_core.prompts import PromptTemplate
 from langchain.agents import AgentExecutor
 from langchain_community.tools import ShellTool
+from langchain_core.runnables.graph import MermaidDrawMethod
+import nest_asyncio
 
 local_model = "llama3.2"
 
@@ -37,7 +39,7 @@ def initialize_agents() -> Dict[str, Any]:
         "planner": Planner(model=model),
         "recon": Recon(model=model),
         "attacker": Attacker(model=model),
-        "reporter": Reporter()
+        "reporter": Reporter(model=model)
     }
 
 def create_agents() -> Dict[str, Any]:
@@ -77,28 +79,28 @@ def create_agents() -> Dict[str, Any]:
     # Create agents with proper prompt templates and tool instances
     explorer = create_react_agent(
         model=model,
-        tools=[nmap_tool, shell_tool],
+        tools=[shell_tool],
         prompt="You are a pentest expert. You are responsible for exploring the target and gathering information about the target. You have access to the following tools: {tools}",
         name="explorer"
     )
     
     planner = create_react_agent(
         model=model,
-        tools=[nmap_tool, shell_tool],
+        tools=[shell_tool],
         prompt="You are a pentest expert. You are responsible for planning the pentest. You have access to the following tools: {tools}",
         name="planner"
     )
     
     attacker = create_react_agent(
         model=model,
-        tools=[nmap_tool, shell_tool],
+        tools=[shell_tool],
         prompt="You are a pentest expert. You are responsible for attacking the target. You have access to the following tools: {tools}",
         name="attacker"
     )
     
     reporter = create_react_agent(
         model=model,
-        tools=[nmap_tool, shell_tool],
+        tools=[shell_tool],
         prompt="You are a pentest expert. You are responsible for reporting the results of the pentest. You have access to the following tools: {tools}",
         name="reporter"
     )
@@ -110,79 +112,208 @@ def create_agents() -> Dict[str, Any]:
         "reporter": reporter
     }
 
-def create_workflow() -> StateGraph:
-    """Create the main pentesting workflow graph"""
+def create_workflow():
+    """Create the main pentesting workflow graph with conditional edges and supervisor"""
     agents = create_agents()
-    workflow = create_supervisor(
-        [
-            agents["planner"],
-            agents["explorer"], 
-            agents["attacker"],
-            agents["reporter"]
-        ],
+    
+    # Create the workflow graph
+    workflow = StateGraph(PenTestState)
+    
+    # Create supervisor as a runnable agent
+    supervisor = create_react_agent(
         model=model,
-        prompt=(
-            """You are a Pentest orchestrator overseeing and managing a team of pentest experts \n
-            You are responsible for the overall direction of the pentest and the coordination of the team \n
-            And you must go through the following phases for pentesting: \n 
-            Planning \n
-            Reconnaissance \n
-            Attacking \n
-            Reporting \n    
-            Use Planner to create a plan for the pentest \n
-            Use Recon to gather information about the target \n
-            Use Attacker to attack the target \n
-            Use Reporter to report the results of the pentest"""
-        ),
-        add_handoff_messages=True,
-        supervisor_name="Orchestrator",
+        tools=[],
+        prompt="""You are a Pentest orchestrator overseeing and managing a team of pentest experts.
+        You are responsible for the overall direction of the pentest and the coordination of the team.
+        You must go through the following phases for pentesting:
+        1. Planning - Create a plan for the pentest
+        2. Reconnaissance - Gather information about the target
+        3. Attacking - Execute attacks based on findings
+        4. Reporting - Document results and findings
+        
+        Based on the current state, determine which phase should be executed next.
+        Return only the name of the next phase: 'planning', 'recon', 'attack', or 'reporting'.""",
+        name="supervisor"
     )
+    
+    # Define conditional functions for edge routing
+    def planning_complete(state: PenTestState) -> str:
+        """Check if planning phase is complete"""
+        if (state.planning_results is not None 
+            and len(state.planning_results) > 0
+            and "objectives" in state.planning_results):
+            return "recon"
+        return "planning"
+    
+    def recon_complete(state: PenTestState) -> str:
+        """Check if reconnaissance phase is complete"""
+        if (len(state.open_ports) > 0 
+            and len(state.services) > 0):
+            return "attack"
+        return "recon"
+    
+    def attack_complete(state: PenTestState) -> str:
+        """Check if attack phase is complete"""
+        if (len(state.successful_exploits) > 0 
+            or len(state.failed_exploits) > 0):
+            return "reporting"
+        return "attack"
+    
+    def need_more_recon(state: PenTestState) -> str:
+        """Check if more reconnaissance is needed"""
+        if (state.remaining_steps > 0 
+            and len(state.open_ports) == 0):
+            return "recon"
+        return "attack"
+    
+    def need_plan_update(state: PenTestState) -> str:
+        """Check if planning needs to be updated"""
+        if (state.remaining_steps > 0 
+            and len(state.vulnerabilities) > 0 
+            and not state.planning_results.get("updated_for_vulns", False)):
+            return "planning"
+        return "attack"
+    
+    def supervisor_routing(state: PenTestState) -> str:
+        """Determine which phase to execute next based on state"""
+        # Check if we need to start with planning
+        if not state.planning_results:
+            return "planning"
+        
+        # Check if we need more reconnaissance
+        if not state.open_ports and not state.services:
+            return "recon"
+        
+        # Check if we need to attack
+        if not state.successful_exploits and not state.failed_exploits:
+            return "attack"
+        
+        # Check if we need to report
+        if state.successful_exploits or state.failed_exploits:
+            return "reporting"
+        
+        # Default to planning if no other conditions are met
+        return "planning"
+    
+    # Add nodes to the graph
+    workflow.add_node("supervisor", supervisor)
+    workflow.add_node("planning", agents["planner"])
+    workflow.add_node("recon", agents["explorer"])
+    workflow.add_node("attack", agents["attacker"])
+    workflow.add_node("reporting", agents["reporter"])
+    
+    # Add supervisor edges
+    workflow.add_edge(START, "supervisor")
+    workflow.add_conditional_edges(
+        "supervisor",
+        supervisor_routing,
+        {
+            "planning": "planning",
+            "recon": "recon",
+            "attack": "attack",
+            "reporting": "reporting"
+        }
+    )
+    
+    # Add conditional edges for phase transitions
+    workflow.add_conditional_edges(
+        "planning",
+        planning_complete,
+        {
+            "planning": "planning",
+            "recon": "recon"
+        }
+    )
+    
+    workflow.add_conditional_edges(
+        "recon",
+        recon_complete,
+        {
+            "recon": "recon",
+            "attack": "attack"
+        }
+    )
+    
+    workflow.add_conditional_edges(
+        "attack",
+        attack_complete,
+        {
+            "attack": "attack",
+            "reporting": "reporting"
+        }
+    )
+    
+    # Add feedback loops with conditional edges
+    workflow.add_conditional_edges(
+        "attack",
+        need_more_recon,
+        {
+            "recon": "recon",
+            "attack": "attack"
+        }
+    )
+    
+    workflow.add_conditional_edges(
+        "attack",
+        need_plan_update,
+        {
+            "planning": "planning",
+            "attack": "attack"
+        }
+    )
+    
+    # Add edges back to supervisor
+    workflow.add_edge("planning", "supervisor")
+    workflow.add_edge("recon", "supervisor")
+    workflow.add_edge("attack", "supervisor")
+    workflow.add_edge("reporting", "supervisor")
+    
+    # Add end edge
+    workflow.add_edge("supervisor", END)
+    
     return workflow
 
 # Create and compile the workflow
 workflow = create_workflow()
 graph = workflow.compile()
 
-# Initialize state with required messages field
-"""
-initial_state = {
-    "messages": [HumanMessage(content="Start pentesting on localhost")],
-    "ip_port": "localhost:"
-}
-
-
-initial_state = {
-    "messages": ["Start pentesting on localhost"],  # List of strings
-    "ip_port": "localhost:",
-    "input_message": "Start pentesting on localhost",  # Required string
-    "remaining_steps": 5,  # Required integer
-    "planning_results": {},
-    "vulnerabilities": [],
-    "services": [],
-    "subdomains": [],
-    "open_ports": [],
-    "successful_exploits": [],
-    "failed_exploits": [],
-    "risk_score": 0.0
-}
-
-
-#streaming to the terminal in real time
-
-for chunk in graph.stream(
-    initial_state,
-    subgraphs=True,
-    stream_mode="updates"
-):
-    print(chunk)
-"""
 # Save the graph visualization
-graph_path = 'pentest.png'
+graph_path = 'workflow_graph.png'
 graph.get_graph().draw_png(graph_path)
 print(f"Graph visualization saved to: {graph_path}")
 
-# Display the graph
-display(Image(graph_path))
-
-# Export the graph
+# Export the graph for Studio UI
 __all__ = ["graph"]
+
+"""
+# Initialize state with proper PenTestState structure
+initial_state = PenTestState(
+    ip_port="localhost",
+    planning_results={},
+    vulnerabilities=[],
+    services=[],
+    subdomains=[],
+    open_ports=[],
+    successful_exploits=[],
+    failed_exploits=[],
+    risk_score=0.0,
+    remaining_steps=5,
+    messages=[HumanMessage(content="Start pentesting on localhost")],
+    chat_history=[],
+    start_time=datetime.now()
+)
+
+# Run the workflow
+async def run_pentest():
+    async for chunk in graph.astream(
+        initial_state,
+        subgraphs=True,
+        stream_mode="updates"
+    ):
+        print(f"State update: {chunk}")
+
+# Run the pentest
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(run_pentest())
+"""

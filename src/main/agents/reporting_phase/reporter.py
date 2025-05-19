@@ -2,115 +2,165 @@ from datetime import datetime
 from langchain_core.tools import tool
 import requests
 import nmap
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
 from ...agents.orchestrator.memory import PenTestState
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool
 from langchain.tools import Tool
 from .tools.reporting_tools import WriteReport
-
+from IPython.display import Image, display
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.prebuilt import create_react_agent
+from langgraph_swarm import create_handoff_tool, create_swarm
+from langchain_core.runnables import Runnable
 
 class Reporter:
-    def __init__(self):
-        self._tools: list = [
-            WriteReport
-        ]
+    def __init__(self, model):
+        self.model = model
+        self.tools = [WriteReport()]
         self.name = "reporter"
-        self.prompt = "You are a pentesting report writer. You are given a list of vulnerabilities and a report template. You need to write a report based on the vulnerabilities and the report template."
+        
+        # Create specialized sub-agents
+        self.report_generator = create_react_agent(
+            model,
+            [WriteReport(), create_handoff_tool(agent_name="report_analyzer")],
+            prompt="You are a pentesting report writer. Your task is to generate comprehensive reports based on findings.",
+            name="report_generator"
+        )
+        
+        self.report_analyzer = create_react_agent(
+            model,
+            [create_handoff_tool(agent_name="report_generator")],
+            prompt="You are a report analysis expert. Your task is to analyze and validate report content.",
+            name="report_analyzer"
+        )
+        
+        # Create the swarm
+        self.checkpointer = InMemorySaver()
+        self.workflow = create_swarm(
+            [self.report_generator, self.report_analyzer],
+            default_active_agent="report_generator"
+        )
+        self.app = self.workflow.compile(checkpointer=self.checkpointer)
     
     def get_tools(self) -> List[Tool]:
-        return self._tools
+        return self.tools
     
-    async def generate_report(self, state: PenTestState) -> str:
-        """Generate a comprehensive pentest report based on findings"""
-        report = f"""
-        Penetration Testing Report
-        Generated on: {datetime.now()}
+    async def ainvoke(self, state: PenTestState, config: Optional[Dict] = None, **kwargs) -> PenTestState:
+        """Asynchronously invoke the reporter agent.
         
-        Target: {state.ip_port}
-        
-        Summary of Findings:
-        {self._summarize_findings(state)}
-        
-        Detailed Vulnerabilities:
-        {self._format_vulnerabilities(state)}
-        
-        Recommendations:
-        {self._generate_recommendations(state)}
+        Args:
+            state: The current state of the pentest
+            config: Optional configuration dictionary
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            Updated state after reporting phase
         """
-        return report
+        try:
+            config = config or {"configurable": {"thread_id": state.ip_port}}
+            
+            # Generate initial report
+            turn_1 = await self.app.ainvoke(
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": f"Generate a comprehensive report for target {state.ip_port} with the following findings:\n" +
+                                     f"Vulnerabilities: {state.vulnerabilities}\n" +
+                                     f"Open Ports: {state.open_ports}\n" +
+                                     f"Services: {state.services}"
+                        }
+                    ]
+                },
+                config
+            )
+            
+            # Analyze and validate report
+            turn_2 = await self.app.ainvoke(
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "Analyze and validate the generated report for completeness and accuracy"
+                        }
+                    ]
+                },
+                config
+            )
+            
+            # Update state with report
+            report = turn_1.get("report", "")
+            state.messages.append(AIMessage(content=f"Report generated successfully. Analysis complete."))
+            
+            # Save report to file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"pentest_report_{timestamp}.txt"
+            with open(filename, "w") as f:
+                f.write(report)
+            
+            state.messages.append(AIMessage(content=f"Report saved to {filename}"))
+            
+            return state
+            
+        except Exception as e:
+            error_message = f"Error in reporting phase: {str(e)}"
+            state.messages.append(AIMessage(content=error_message))
+            return state
     
-    def _summarize_findings(self, state: PenTestState) -> str:
-        """Summarize the key findings from the pentest"""
-        total_vulns = len(state.vulnerabilities)
-        critical = sum(1 for v in state.vulnerabilities if v.severity.lower() == 'critical')
-        high = sum(1 for v in state.vulnerabilities if v.severity.lower() == 'high')
-        medium = sum(1 for v in state.vulnerabilities if v.severity.lower() == 'medium')
-        low = sum(1 for v in state.vulnerabilities if v.severity.lower() == 'low')
+    def get_agent(self) -> Runnable:
+        """Get the agent runnable for use in the workflow.
         
-        return f"""
-        Total Vulnerabilities Found: {total_vulns}
-        Critical: {critical}
-        High: {high}
-        Medium: {medium}
-        Low: {low}
+        Returns:
+            The agent runnable
         """
+        return self.app
     
-    def _format_vulnerabilities(self, state: PenTestState) -> str:
-        """Format the detailed vulnerability information"""
-        vuln_details = []
-        for vuln in state.vulnerabilities:
-            vuln_details.append(f"""
-            Vulnerability: {vuln.name}
-            Severity: {vuln.severity}
-            CVSS Score: {vuln.cvss_score}
-            Description: {vuln.description}
-            Affected Components: {', '.join(vuln.affected_components)}
-            """)
-        return "\n".join(vuln_details)
-    
-    def _generate_recommendations(self, state: PenTestState) -> str:
-        """Generate recommendations based on findings"""
-        recommendations = []
-        for vuln in state.vulnerabilities:
-            if vuln.severity.lower() in ['critical', 'high']:
-                recommendations.append(f"Immediate action required for {vuln.name}: {vuln.description}")
-        return "\n".join(recommendations)
-    
-    async def _start_reporting_(self, state: PenTestState) -> PenTestState:
-        """Start the reporting phase"""
-        report = await self.generate_report(state)
-        state.messages.append(AIMessage(content=f"Starting report generation: {report}"))
-        return state
-    
-    async def _finalize_report_(self, state: PenTestState) -> PenTestState:
-        """Finalize the report and save it"""
-        final_report = await self.generate_report(state)
-        state.messages.append(AIMessage(content=f"Final report generated: {final_report}"))
-        return state
-    
-    def _create_graph_(self) -> StateGraph:
-        """Create the reporting workflow graph"""
-        graph = StateGraph(PenTestState)
-        graph.add_node("start", self._start_reporting_)
-        graph.add_node("end", END)
-        return graph
-    
-    def add_graph_edges(self, graph):
-        """Add edges to the reporting workflow graph"""
-        graph.add_edge("start", "end")
+    def display_graph(self):
+        # Save the graph visualization
+        graph_path = 'reporting_workflow.png'
+        # Compile the workflow first
+        compiled_workflow = self.workflow.compile()
+        # Use the compiled graph for visualization
+        compiled_workflow.get_graph().draw_png(graph_path)
+        print(f"Graph visualization saved to: {graph_path}")
+        
+        # Display the graph
+        return display(Image(graph_path))
 
 if __name__ == "__main__":
-    reporter = Reporter()
-        
-        
-        
-
-
-
-
-
-
-
+    from langchain_ollama import ChatOllama
+    
+    # Initialize with Ollama model
+    model = ChatOllama(model="llama2", temperature=1)
+    reporter = Reporter(model)
+    
+    # Create a test state
+    test_state = PenTestState(
+        ip_port="example.com:80,443",
+        open_ports=["80", "443"],
+        input_message="Generate report for example.com",
+        remaining_steps=5,
+        planning_results={},
+        vulnerabilities=[
+            {
+                "name": "Test Vulnerability",
+                "severity": "High",
+                "description": "Test vulnerability description",
+                "affected_components": ["web server"]
+            }
+        ],
+        services=["HTTP", "HTTPS"],
+        subdomains=[],
+        successful_exploits=[],
+        failed_exploits=[],
+        risk_score=7.5
+    )
+    
+    # Run reporting phase (in async context)
+    import asyncio
+    result = asyncio.run(reporter.ainvoke(test_state))
+    print("Report Generation Results:")
+    print("Messages:", result.messages)
