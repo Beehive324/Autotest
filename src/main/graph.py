@@ -18,7 +18,6 @@ from .agents.planning_phase.planner import Planner
 from .agents.attacking_phase.attacker import Attacker
 from .agents.reporting_phase.reporter import Reporter
 from IPython.display import Image, display
-from langchain_ollama import ChatOllama
 from .agents.orchestrator.orchestrator import create_supervisor
 from langgraph.prebuilt import create_react_agent
 from .agents.recon_phase.tools.recontools import Nmap
@@ -27,6 +26,8 @@ from langchain.agents import AgentExecutor
 from langchain_community.tools import ShellTool
 from langchain_core.runnables.graph import MermaidDrawMethod
 import nest_asyncio
+from langchain_ollama import ChatOllama
+from langchain_core.runnables import Runnable
 
 local_model = "llama3.2"
 
@@ -75,6 +76,7 @@ def create_agents() -> Dict[str, Any]:
     # Create tool instances
     nmap_tool = Nmap()
     shell_tool = ShellTool()
+    
     
     # Create agents with proper prompt templates and tool instances
     explorer = create_react_agent(
@@ -125,7 +127,7 @@ def create_workflow():
         tools=[],
         prompt="""You are a Pentest orchestrator overseeing and managing a team of pentest experts.
         You are responsible for the overall direction of the pentest and the coordination of the team.
-        You must go through the following phases for pentesting:
+        You must go through the following phases for pentesting autonomously make decisions based on the current state:
         1. Planning - Create a plan for the pentest
         2. Reconnaissance - Gather information about the target
         3. Attacking - Execute attacks based on findings
@@ -147,15 +149,15 @@ def create_workflow():
     
     def recon_complete(state: PenTestState) -> str:
         """Check if reconnaissance phase is complete"""
-        if (len(state.open_ports) > 0 
-            and len(state.services) > 0):
+        if (len(state.open_ports) >= 0 
+            and len(state.services) >= 0):
             return "attack"
         return "recon"
     
     def attack_complete(state: PenTestState) -> str:
         """Check if attack phase is complete"""
-        if (len(state.successful_exploits) > 0 
-            or len(state.failed_exploits) > 0):
+        if (len(state.successful_exploits) >= 0 
+            or len(state.failed_exploits) >= 0):
             return "reporting"
         return "attack"
     
@@ -197,10 +199,10 @@ def create_workflow():
     
     # Add nodes to the graph
     workflow.add_node("supervisor", supervisor)
-    workflow.add_node("planning", agents["planner"])
-    workflow.add_node("recon", agents["explorer"])
-    workflow.add_node("attack", agents["attacker"])
-    workflow.add_node("reporting", agents["reporter"])
+    workflow.add_node("planning", Planner(model=model))
+    workflow.add_node("recon", Recon(model=model))
+    workflow.add_node("attack", Attacker(model=model))
+    workflow.add_node("reporting", Reporter(model=model))
     
     # Add supervisor edges
     workflow.add_edge(START, "supervisor")

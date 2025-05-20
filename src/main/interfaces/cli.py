@@ -10,6 +10,11 @@ from ..agents.attacking_phase.attacker import Attacker
 from ..agents.reporting_phase.reporter import Reporter
 from ..graph import create_workflow, graph
 from ..agents.orchestrator.memory import PenTestState
+from langchain_ollama import ChatOllama
+import asyncio
+import os
+from langchain_core.messages import AIMessage
+from langchain_core.messages import HumanMessage
 
 f = Figlet(font='slant')
 __author__ = "Fairson Soares"
@@ -60,13 +65,15 @@ def recon(target, ports, output, verbose):
     )
     
     # Initialize recon agent
-    recon = Recon(model='llama3:2', tools="tools")
+    local_model = "llama3.2"
+    model = ChatOllama(model=local_model, temperature=1)        
+    recon = Recon(model=model)
     
     try:
         with streaming_output(verbose) as stream:
             # Run reconnaissance with progress updates
             with click.progressbar(length=100, label='Reconnaissance Progress') as progress:
-                results = recon.run(state)
+                results = recon.invoke(state)
                 for i in range(100):
                     progress.update(1)
                     if verbose:
@@ -182,7 +189,7 @@ def report(results, output, format, verbose):
 def full_scan(target, scope, output, verbose):
     """Run a full pentest scan using the multi-agent system"""
     print_banner()
-    click.echo(f"Starting full scan for target: {target}")
+    click.echo(f"\n🔍 Starting full scan for target: {click.style(target, fg='cyan', bold=True)}")
     
     # Initialize state
     state = PenTestState(
@@ -190,38 +197,67 @@ def full_scan(target, scope, output, verbose):
         input_message=f"Starting full scan for target {target}",
         target_domain=target if '.' in target else None,
         target_scope=[scope] if scope else None,
-        remaining_steps=100
+        remaining_steps=100,
+        messages=[HumanMessage(content=f"Start pentesting on {target}")],
+        planning_results={},
+        vulnerabilities=[],
+        services=[],
+        subdomains=[],
+        open_ports=[],
+        successful_exploits=[],
+        failed_exploits=[],
+        risk_score=0.0,
+        chat_history=[],
+        start_time=datetime.now()
     )
     
     try:
-        with streaming_output(verbose) as stream:
-            # Run the full workflow with progress updates
-            workflow = create_workflow()
-            with click.progressbar(length=4, label='Overall Progress') as progress:
-                # Reconnaissance phase
-                click.echo("\nStarting Reconnaissance Phase...")
-                results = workflow.run(state)
-                progress.update(1)
+        # Run the workflow using the compiled graph
+        async def run_workflow():
+            async for chunk in graph.astream(
+                state,
+                subgraphs=True,
+                stream_mode="updates"
+            ):
+                # Print the raw chunk for debugging
+                click.echo(f"\n{chunk}")
                 
-                # Planning phase
-                click.echo("\nStarting Planning Phase...")
-                progress.update(1)
-                
-                # Attack phase
-                click.echo("\nStarting Attack Phase...")
-                progress.update(1)
-                
-                # Reporting phase
-                click.echo("\nStarting Reporting Phase...")
-                progress.update(1)
+                # Extract and print phase information
+                if isinstance(chunk, tuple) and len(chunk) == 2:
+                    phase_info, update_info = chunk
+                    if phase_info and len(phase_info) > 0:
+                        phase = phase_info[0].split(':')[0]
+                        click.echo(f"\nPhase: {click.style(phase, fg='green', bold=True)}")
+                    
+                    # Print state updates
+                    if update_info:
+                        click.echo(f"State Update: {json.dumps(update_info, indent=2, default=str)}")
+        
+        # Run the async workflow
+        asyncio.run(run_workflow())
         
         # Save results
+        os.makedirs(output, exist_ok=True)
         with open(f"{output}/results.json", 'w') as f:
-            json.dump(results, f, indent=2)
+            json.dump({
+                "target": state.ip_port,
+                "planning_results": state.planning_results,
+                "vulnerabilities": [v.__dict__ for v in state.vulnerabilities],
+                "services": [s.__dict__ for s in state.services],
+                "subdomains": state.subdomains,
+                "open_ports": state.open_ports,
+                "successful_exploits": state.successful_exploits,
+                "failed_exploits": state.failed_exploits,
+                "risk_score": state.risk_score,
+                "messages": [{"content": m.content, "type": m.__class__.__name__} for m in state.messages],
+                "start_time": state.start_time.isoformat(),
+                "end_time": datetime.now().isoformat()
+            }, f, indent=2)
             
-        click.echo(f"Full scan completed. Results saved to {output}")
+        click.echo(f"\n✅ Scan completed. Results saved to {output}")
+        
     except Exception as e:
-        click.echo(f"Error during full scan: {str(e)}", err=True)
+        click.echo(f"\n❌ Error during scan: {str(e)}", err=True)
 
 @cli.command()
 @click.option('--target', '-t', required=True, callback=validate_target, help='Target to maintain access to')

@@ -17,74 +17,89 @@ from ...agents.orchestrator.memory import Messages
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.prebuilt import create_react_agent
-from langgraph_swarm import create_handoff_tool, create_swarm
-from typing import List, Optional, Dict
-from langchain_core.runnables import Runnable
+from typing import List, Optional, Dict, Type
+from langchain_core.runnables import Runnable, RunnableConfig
+from langchain_core.tools import BaseTool
+from langchain_community.tools import ShellTool
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-class Recon:
+shell_tool = ShellTool()
+
+class Recon(Runnable):
     def __init__(self, model):
         self.model = model
         self.tools = [
-            Nmap(),
-            Resolve(),
-            Subdomain_Enum_CRT(),
-            Subdomain_Enum_gobuster(),
-            Subdomain_Enum_findomain(),
-            Subdomain_Enum_amass(),
-            Subdomain_Enum_wayback(),
-            Subdomain_Enum_sublist3r(),
-            APIDiscovery(),
-            WebSearch(),
-            Masscan(),
+            shell_tool
         ]
         self.name = "Recon"
         
         # Create specialized sub-agents
         self.port_scanner = create_react_agent(
             model,
-            [Nmap(), Masscan(), create_handoff_tool(agent_name="vulnerability_analyzer")],
-            prompt="You are a port scanning expert. Your task is to identify open ports and services on target systems.",
+            [shell_tool],
+            prompt="""You are a port scanning expert. Your task is to identify open ports and services on target systems.
+            After scanning, return the results in a format that can be used by the vulnerability analyzer.""",
             name="port_scanner"
         )
         
         self.vulnerability_analyzer = create_react_agent(
             model,
-            [create_handoff_tool(agent_name="port_scanner"), create_handoff_tool(agent_name="subdomain_enum")],
-            prompt="You are a vulnerability analysis expert. Your task is to analyze scan results and identify potential security issues.",
+            [shell_tool],
+            prompt="""You are a vulnerability analysis expert. Your task is to analyze scan results and identify potential security issues.
+            Use the shell tool to run vulnerability scans and analyze the results.""",
             name="vulnerability_analyzer"
         )
         
         self.subdomain_enum = create_react_agent(
             model,
-            [
-                Subdomain_Enum_CRT(),
-                Subdomain_Enum_gobuster(),
-                Subdomain_Enum_findomain(),
-                Subdomain_Enum_amass(),
-                Subdomain_Enum_wayback(),
-                Subdomain_Enum_sublist3r(),
-                create_handoff_tool(agent_name="port_scanner")
-            ],
+            [shell_tool],
             prompt="You are a subdomain enumeration expert. Your task is to discover subdomains and related infrastructure.",
             name="subdomain_enum"
         )
-        
-        # Create the swarm
-        self.checkpointer = InMemorySaver()
-        self.workflow = create_swarm(
-            [self.port_scanner, self.vulnerability_analyzer, self.subdomain_enum],
-            default_active_agent="port_scanner"
-        )
-        self.app = self.workflow.compile(checkpointer=self.checkpointer)
-    
-    def get_tools(self):
-        return self.tools
 
-    async def ainvoke(self, state: PenTestState, config: Optional[Dict] = None, **kwargs) -> PenTestState:
+    @property
+    def input_schema(self) -> Type[PenTestState]:
+        """Return the input schema type."""
+        return PenTestState
+
+    @property
+    def output_schema(self) -> Type[PenTestState]:
+        """Return the output schema type."""
+        return PenTestState
+
+    def invoke(self, state: PenTestState, config: Optional[RunnableConfig] = None, **kwargs) -> PenTestState:
+        """Synchronously invoke the recon agent.
+        
+        Args:
+            state: The current state of the pentest
+            config: Optional configuration dictionary
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            Updated state after recon phase
+        """
+        try:
+            # Initialize messages if not present
+            if not hasattr(state, 'messages'):
+                state.messages = []
+                
+            # Create and run the recon workflow
+            graph = self._create_graph()
+            self.add_graph_edges(graph)
+            compiled_graph = graph.compile()
+            state = compiled_graph.invoke(state)
+            
+            return state
+            
+        except Exception as e:
+            error_message = f"Error in recon phase: {str(e)}"
+            state.messages.append(AIMessage(content=error_message))
+            return state
+
+    async def ainvoke(self, state: PenTestState, config: Optional[RunnableConfig] = None, **kwargs) -> PenTestState:
         """Asynchronously invoke the recon agent.
         
         Args:
@@ -96,57 +111,15 @@ class Recon:
             Updated state after recon phase
         """
         try:
-            config = config or {"configurable": {"thread_id": state.ip_port}}
-            
-            # Initial port scan
-            turn_1 = await self.app.ainvoke(
-                {
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": f"Scan the target {state.ip_port} for open ports and services"
-                        }
-                    ]
-                },
-                config
-            )
-            
-            # Analyze results
-            turn_2 = await self.app.ainvoke(
-                {
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": f"Analyze the scan results for {state.ip_port}"
-                        }
-                    ]
-                },
-                config
-            )
-            
-            # If it's a domain, perform subdomain enumeration
-            if any(c.isalpha() for c in state.ip_port):
-                turn_3 = await self.app.ainvoke(
-                    {
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": f"Enumerate subdomains for {state.ip_port}"
-                            }
-                        ]
-                    },
-                    config
-                )
+            # Initialize messages if not present
+            if not hasattr(state, 'messages'):
+                state.messages = []
                 
-                # Update state with subdomain results
-                state.subdomains = turn_3.get("subdomains", [])
-            
-            # Update state with scan results
-            state.open_ports = turn_1.get("open_ports", [])
-            state.vulnerabilities = turn_2.get("vulnerabilities", [])
-            
-            # Add messages to state
-            state.messages.append(AIMessage(content=f"Recon phase completed. Found {len(state.open_ports)} open ports and {len(state.vulnerabilities)} vulnerabilities."))
+            # Create and run the recon workflow
+            graph = self._create_graph()
+            self.add_graph_edges(graph)
+            compiled_graph = graph.compile()
+            state = await compiled_graph.ainvoke(state)
             
             return state
             
@@ -154,6 +127,89 @@ class Recon:
             error_message = f"Error in recon phase: {str(e)}"
             state.messages.append(AIMessage(content=error_message))
             return state
+
+
+    def _port_scanning_phase(self, state: PenTestState) -> PenTestState:
+        model_with_tools = self.model.bind_tools(self.tools)
+        result = model_with_tools.invoke(f"Scan {state.ip_port} for open ports using nmap")
+        
+        if isinstance(result, AIMessage):
+            content = result.content
+        else:
+            content = str(result)
+        
+        for line in content:
+            if line.strip():
+                #state.messages.append(AIMessage(content=line))
+                state.open_ports.append(line)
+                state.services.append(line)
+        
+        return state
+        
+    
+    def _vulnerability_analysis_phase(self, state: PenTestState) -> PenTestState:
+        
+        model_with_tools =self.model.bind_tools(self.tools)
+        
+        result = model_with_tools.invoke(f"Analyze the scan results for {state.ip_port}")
+        
+        for line in result:
+            #state.messages.append(AIMessage(content=line))
+            state.vulnerabilities.append(line) 
+        
+        return state
+        
+    
+    def _subdomain_enumeration_phase(self, state: PenTestState) -> PenTestState:
+        """Perform subdomain enumeration if target is a domain.
+        
+        Args:
+            state: Current state of the penetration test
+            
+        Returns:
+            Updated state with subdomain enumeration results
+        """
+        if any(c.isalpha() for c in state.ip_port):
+            logger.info("Starting subdomain enumeration phase...")
+            
+            subdomain_result = self.subdomain_enum.invoke(
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": f"Enumerate subdomains for {state.ip_port}"
+                        }
+                    ]
+                }
+            )
+            
+            state.subdomains = subdomain_result.get("subdomains", [])
+            state.messages.append(AIMessage(content=f"Subdomain enumeration completed. Found {len(state.subdomains)} subdomains."))
+        
+        return state
+    
+    def _create_graph(self) -> StateGraph:
+        """Create the recon workflow graph.
+        
+        Returns:
+            StateGraph: The configured recon workflow
+        """
+        graph = StateGraph(PenTestState)
+        graph.add_node("port_scanning", self._port_scanning_phase)
+        graph.add_node("vulnerability_analysis", self._vulnerability_analysis_phase)
+        #graph.add_node("subdomain_enumeration", self._subdomain_enumeration_phase)
+        return graph
+    
+    def add_graph_edges(self, graph: StateGraph) -> None:
+        """Add edges to the recon workflow graph.
+        
+        Args:
+            graph: The StateGraph to add edges to
+        """
+        graph.add_edge(START, "port_scanning")
+        graph.add_edge("port_scanning", "vulnerability_analysis")
+        graph.add_edge("vulnerability_analysis", END)
+        #graph.add_edge("subdomain_enumeration", END)
     
     def get_agent(self) -> Runnable:
         """Get the agent runnable for use in the workflow.
@@ -161,19 +217,7 @@ class Recon:
         Returns:
             The agent runnable
         """
-        return self.app
-    
-    def display_graph(self):
-        # Save the graph visualization
-        graph_path = 'recon_workflow.png'
-        # Compile the workflow first
-        compiled_workflow = self.workflow.compile()
-        # Use the compiled graph for visualization
-        compiled_workflow.get_graph().draw_png(graph_path)
-        print(f"Graph visualization saved to: {graph_path}")
-        
-        # Display the graph
-        return display(Image(graph_path))
+        return self.port_scanner  # Return the primary agent
 
 if __name__ == "__main__":
     from langchain_ollama import ChatOllama

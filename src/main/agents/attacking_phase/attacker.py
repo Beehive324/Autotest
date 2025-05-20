@@ -18,8 +18,11 @@ import json
 from langgraph.prebuilt import create_react_agent
 from langgraph_swarm import create_handoff_tool, create_swarm
 from langchain_core.runnables import Runnable
+from langchain_community.tools import ShellTool
 
 logger = logging.getLogger(__name__)
+
+shell_tool = ShellTool()
 
 class URL(BaseModel):
     url: str = Field(description="The URL to target")
@@ -42,30 +45,8 @@ class Attacker(Runnable):
     def __init__(self, model, tools: List = None):
         self.model = model
         self.tools = [
-            Tool(
-                name="sql_injection",
-                func=SQL_Injection._run,
-                description="Performs SQL injection attacks",
-                args_schema=URL
-            ),
-            Tool(
-                name="xss",
-                func=XSS._run,
-                description="Performs XSS attacks",
-                args_schema=URL
-            ),
-            Tool(
-                name="shell_shock",
-                func=ShellShock._run,
-                description="Performs ShellShock attacks",
-                args_schema=URL
-            ),
-            Tool(
-                name="binary_analysis",
-                func=BinaryAnalysis._run,
-                description="Performs binary analysis",
-                args_schema=URL
-            )
+            shell_tool,
+
         ]
         self.name = "Attacker"
         
@@ -98,7 +79,7 @@ class Attacker(Runnable):
             name="sql_injection_agent"
         )
         
-        xss_tools = [self.tools[1]] + [tool for tool in self.handoff_tools if tool.name != "transfer_to_xss_agent"]
+        xss_tools = [self.tools[0]] + [tool for tool in self.handoff_tools if tool.name != "transfer_to_xss_agent"]
         xss_model = self.model.bind_tools(xss_tools)
         xss_agent = create_react_agent(
             xss_model,
@@ -112,7 +93,7 @@ class Attacker(Runnable):
             name="xss_agent"
         )
         
-        shell_shock_tools = [self.tools[2]] + [tool for tool in self.handoff_tools if tool.name != "transfer_to_shell_shock_agent"]
+        shell_shock_tools = [self.tools[0]] + [tool for tool in self.handoff_tools if tool.name != "transfer_to_shell_shock_agent"]
         shell_shock_model = self.model.bind_tools(shell_shock_tools)
         shell_shock_agent = create_react_agent(
             shell_shock_model,
@@ -126,7 +107,7 @@ class Attacker(Runnable):
             name="shell_shock_agent"
         )
         
-        binary_analysis_tools = [self.tools[3]] + [tool for tool in self.handoff_tools if tool.name != "transfer_to_binary_analysis_agent"]
+        binary_analysis_tools = [self.tools[0]] + [tool for tool in self.handoff_tools if tool.name != "transfer_to_binary_analysis_agent"]
         binary_analysis_model = self.model.bind_tools(binary_analysis_tools)
         binary_analysis_agent = create_react_agent(
             binary_analysis_model,

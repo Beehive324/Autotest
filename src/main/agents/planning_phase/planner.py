@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
@@ -10,7 +10,7 @@ from ...agents.orchestrator.memory import PenTestState
 
 
 
-class Planner:
+class Planner(Runnable):
     def __init__(self, model):
         """Initialize the Planner with a language model.
         
@@ -55,7 +55,97 @@ class Planner:
         
         # Create the agent executor
         self.executor = AgentExecutor(agent=self.agent, tools=self.tools)
-    
+
+    @property
+    def input_schema(self) -> Type[PenTestState]:
+        """Return the input schema type."""
+        return PenTestState
+
+    @property
+    def output_schema(self) -> Type[PenTestState]:
+        """Return the output schema type."""
+        return PenTestState
+
+    def invoke(self, state: PenTestState, config: Optional[RunnableConfig] = None, **kwargs) -> PenTestState:
+        """Synchronously invoke the planner agent.
+        
+        Args:
+            state: The current state of the pentest
+            config: Optional configuration dictionary
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            Updated state after planning phase
+        """
+        try:
+            # Initialize messages if not present
+            if not hasattr(state, 'messages'):
+                state.messages = []
+                
+            # First run the detailed planning workflow
+            graph = self._create_graph()
+            self.add_graph_edges(graph)
+            compiled_graph = graph.compile()
+            state = compiled_graph.invoke(state)
+            
+            # Then run the ReAct agent for any additional planning
+            input_data = {
+                "input": state.messages[-1].content if state.messages else "Start planning phase",
+                "agent_scratchpad": ""
+            }
+            
+            result = self.executor.invoke(input_data)
+            state.messages.append(AIMessage(content=result["output"]))
+            
+            return state
+            
+        except Exception as e:
+            error_message = f"Error in planning phase: {str(e)}"
+            if not hasattr(state, 'messages'):
+                state.messages = []
+            state.messages.append(AIMessage(content=error_message))
+            return state
+
+    async def ainvoke(self, state: PenTestState, config: Optional[RunnableConfig] = None, **kwargs) -> PenTestState:
+        """Asynchronously invoke the planner agent.
+        
+        Args:
+            state: The current state of the pentest
+            config: Optional configuration dictionary
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            Updated state after planning phase
+        """
+        try:
+            # Initialize messages if not present
+            if not hasattr(state, 'messages'):
+                state.messages = []
+                
+            # First run the detailed planning workflow
+            graph = self._create_graph()
+            self.add_graph_edges(graph)
+            compiled_graph = graph.compile()
+            state = await compiled_graph.ainvoke(state)
+            
+            # Then run the ReAct agent for any additional planning
+            input_data = {
+                "input": state.messages[-1].content if state.messages else "Start planning phase",
+                "agent_scratchpad": ""
+            }
+            
+            result = await self.executor.ainvoke(input_data)
+            state.messages.append(AIMessage(content=result["output"]))
+            
+            return state
+            
+        except Exception as e:
+            error_message = f"Error in planning phase: {str(e)}"
+            if not hasattr(state, 'messages'):
+                state.messages = []
+            state.messages.append(AIMessage(content=error_message))
+            return state
+
     def _planning_phase(self, state: PenTestState) -> PenTestState:
         """Initial planning phase to set up the pentest.
         
@@ -196,46 +286,6 @@ class Planner:
         graph.add_edge("planning_phase", "risk_assessment")
         graph.add_edge("risk_assessment", "scope_definition")
         graph.add_edge("scope_definition", END)
-    
-    async def ainvoke(self, state: PenTestState, config: Optional[Dict] = None, **kwargs) -> PenTestState:
-        """Asynchronously invoke the planner agent.
-        
-        Args:
-            state: The current state of the pentest
-            config: Optional configuration dictionary
-            **kwargs: Additional keyword arguments
-            
-        Returns:
-            Updated state after planning phase
-        """
-        try:
-            # Initialize messages if not present
-            if not hasattr(state, 'messages'):
-                state.messages = []
-                
-            # First run the detailed planning workflow
-            graph = self._create_graph()
-            self.add_graph_edges(graph)
-            compiled_graph = graph.compile()
-            state = await compiled_graph.ainvoke(state)
-            
-            # Then run the ReAct agent for any additional planning
-            input_data = {
-                "input": state.messages[-1].content if state.messages else "Start planning phase",
-                "agent_scratchpad": ""
-            }
-            
-            result = await self.executor.ainvoke(input_data)
-            state.messages.append(AIMessage(content=result["output"]))
-            
-            return state
-            
-        except Exception as e:
-            error_message = f"Error in planning phase: {str(e)}"
-            if not hasattr(state, 'messages'):
-                state.messages = []
-            state.messages.append(AIMessage(content=error_message))
-            return state
     
     def get_agent(self) -> Runnable:
         """Get the agent runnable for use in the workflow.
