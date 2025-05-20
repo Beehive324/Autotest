@@ -55,6 +55,11 @@ class Planner(Runnable):
         
         # Create the agent executor
         self.executor = AgentExecutor(agent=self.agent, tools=self.tools)
+        
+        # Create and store the workflow graph
+        self.workflow = self._create_graph()
+        self.add_graph_edges(self.workflow)
+        self.workflow = self.workflow.compile()  # Compile the workflow
 
     @property
     def input_schema(self) -> Type[PenTestState]:
@@ -82,11 +87,8 @@ class Planner(Runnable):
             if not hasattr(state, 'messages'):
                 state.messages = []
                 
-            # First run the detailed planning workflow
-            graph = self._create_graph()
-            self.add_graph_edges(graph)
-            compiled_graph = graph.compile()
-            state = compiled_graph.invoke(state)
+            # Use the stored workflow
+            state = self.workflow.invoke(state)
             
             # Then run the ReAct agent for any additional planning
             input_data = {
@@ -122,11 +124,8 @@ class Planner(Runnable):
             if not hasattr(state, 'messages'):
                 state.messages = []
                 
-            # First run the detailed planning workflow
-            graph = self._create_graph()
-            self.add_graph_edges(graph)
-            compiled_graph = graph.compile()
-            state = await compiled_graph.ainvoke(state)
+            # Use the stored workflow
+            state = await self.workflow.ainvoke(state)
             
             # Then run the ReAct agent for any additional planning
             input_data = {
@@ -146,19 +145,7 @@ class Planner(Runnable):
             state.messages.append(AIMessage(content=error_message))
             return state
 
-    def _planning_phase(self, state: PenTestState) -> PenTestState:
-        """Initial planning phase to set up the pentest.
-        
-        Args:
-            state: Current state of the penetration test
-            
-        Returns:
-            Updated state with planning results
-        """
-        # Initialize messages if not present
-        if not hasattr(state, 'messages'):
-            state.messages = []
-            
+    def _planning_phase(self, state: PenTestState):
         planner_instructions = f"""You are tasked with creating a plan based on the findings of {state.open_ports}
         Conduct the best way to carry out penetration testing based on these open ports.
         Consider:
@@ -166,29 +153,22 @@ class Planner(Runnable):
         2. Recommended testing methodologies
         3. Priority of testing based on service criticality
         """
-        
-        state.planning_results = {
-            "start_time": datetime.now(),
-            "scope": "Initial scope defined",
-            "objectives": ["Identify vulnerabilities", "Assess security posture"]
-        }
-        
         plan = self.model.invoke([
             SystemMessage(content=planner_instructions),
             HumanMessage(content=f"Analyze the following nmap results and create a detailed testing plan: {state.open_ports}")
         ])
-        
-        state.planning_results.update({
-            "planning_results": plan,
-            "last_updated": datetime.now()
-        })
-        
-        # Add the plan to messages
-        state.messages.append(AIMessage(content=str(plan)))
-        
-        return state
+        return {
+            "messages": state.messages + [AIMessage(content=str(plan))],
+            "planning_results": {
+                "start_time": datetime.now(),
+                "scope": "Initial scope defined",
+                "objectives": ["Identify vulnerabilities", "Assess security posture"],
+                "planning_results": plan,
+                "last_updated": datetime.now()
+            }
+        }
     
-    async def _risk_assessment(self, state: PenTestState) -> PenTestState:
+    async def _risk_assessment(self, state: PenTestState):
         """Perform initial risk assessment.
         
         Args:
@@ -212,21 +192,19 @@ class Planner(Runnable):
             HumanMessage(content="Provide a detailed risk assessment")
         ])
             
-        state.planning_results.update({
-            "critical_assets": [],
-            "threat_actors": [],
-            "attack_vectors": [],
-            "risk_level": "medium",
-            "risk_assessment": risk_assessment,
-            "last_updated": datetime.now()
-        })
-        
-        # Add the risk assessment to messages
-        state.messages.append(AIMessage(content=str(risk_assessment)))
-        
-        return state
+        return {
+            "messages": state.messages + [AIMessage(content=str(risk_assessment))],
+            "planning_results": {
+                "critical_assets": [],
+                "threat_actors": [],
+                "attack_vectors": [],
+                "risk_level": "medium",
+                "risk_assessment": risk_assessment,
+                "last_updated": datetime.now()
+            }
+        }
     
-    async def _define_scope(self, state: PenTestState) -> PenTestState:
+    async def _define_scope(self, state: PenTestState):
         """Define the scope of the pentest.
         
         Args:
@@ -249,20 +227,19 @@ class Planner(Runnable):
             HumanMessage(content="Define the testing scope")
         ])
             
-        state.planning_results.update({
-            "scope": {
-                "targets": state.ip_port,
-                "exclusions": [],
-                "testing_methods": ["automated", "manual"],
-                "scope_definition": scope_definition
+        return {
+            "messages": state.messages + [AIMessage(content=str(scope_definition))],
+            "planning_results": {
+                "scope": {
+                    "targets": state.ip_port,
+                    "exclusions": [],
+                    "testing_methods": ["automated", "manual"],
+                    "scope_definition": scope_definition
+                },
+                "last_updated": datetime.now()
             },
-            "last_updated": datetime.now()
-        })
-        
-        # Add the scope definition to messages
-        state.messages.append(AIMessage(content=str(scope_definition)))
-        
-        return state
+            "current_phase": "planning"
+        }
     
     def _create_graph(self) -> StateGraph:
         """Create the planning workflow graph.

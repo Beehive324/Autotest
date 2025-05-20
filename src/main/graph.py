@@ -28,6 +28,7 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 import nest_asyncio
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import Runnable
+from langgraph_supervisor import create_supervisor
 
 local_model = "llama3.2"
 
@@ -122,9 +123,9 @@ def create_workflow():
     workflow = StateGraph(PenTestState)
     
     # Create supervisor as a runnable agent
-    supervisor = create_react_agent(
+    supervisor = create_supervisor(
+        [Planner(model=model), Recon(model=model), Attacker(model=model), Reporter(model=model)],
         model=model,
-        tools=[],
         prompt="""You are a Pentest orchestrator overseeing and managing a team of pentest experts.
         You are responsible for the overall direction of the pentest and the coordination of the team.
         You must go through the following phases for pentesting autonomously make decisions based on the current state:
@@ -135,15 +136,20 @@ def create_workflow():
         
         Based on the current state, determine which phase should be executed next.
         Return only the name of the next phase: 'planning', 'recon', 'attack', or 'reporting'.""",
-        name="supervisor"
+        state_schema=PenTestState,
+        add_handoff_messages=True,
+        add_handoff_back_messages=True,
+        supervisor_name="orchestrator",
+        include_agent_name="inline"
     )
+    
+    compiled_supervisor = supervisor.compile()
+    
     
     # Define conditional functions for edge routing
     def planning_complete(state: PenTestState) -> str:
         """Check if planning phase is complete"""
-        if (state.planning_results is not None 
-            and len(state.planning_results) > 0
-            and "objectives" in state.planning_results):
+        if state.planning_results is not None and len(state.planning_results) > 0:
             return "recon"
         return "planning"
     
@@ -156,8 +162,7 @@ def create_workflow():
     
     def attack_complete(state: PenTestState) -> str:
         """Check if attack phase is complete"""
-        if (len(state.successful_exploits) >= 0 
-            or len(state.failed_exploits) >= 0):
+        if len(state.successful_exploits) > 0:
             return "reporting"
         return "attack"
     
@@ -170,9 +175,9 @@ def create_workflow():
     
     def need_plan_update(state: PenTestState) -> str:
         """Check if planning needs to be updated"""
-        if (state.remaining_steps > 0 
-            and len(state.vulnerabilities) > 0 
-            and not state.planning_results.get("updated_for_vulns", False)):
+        if (
+            len(state.vulnerabilities) < 0 
+            ):
             return "planning"
         return "attack"
     
@@ -198,7 +203,7 @@ def create_workflow():
         return "planning"
     
     # Add nodes to the graph
-    workflow.add_node("supervisor", supervisor)
+    workflow.add_node("supervisor", compiled_supervisor)
     workflow.add_node("planning", Planner(model=model))
     workflow.add_node("recon", Recon(model=model))
     workflow.add_node("attack", Attacker(model=model))
@@ -284,8 +289,21 @@ graph_path = 'workflow_graph.png'
 graph.get_graph().draw_png(graph_path)
 print(f"Graph visualization saved to: {graph_path}")
 
+attacker = Attacker(model=model)
+recon = Recon(model=model)
+planner = Planner(model=model)
+reporter = Reporter(model=model)
+
+attacker_graph = attacker.workflow
+recon_graph = recon.workflow
+planning_graph = planner.workflow
+reporting_graph = reporter.workflow
+
+
 # Export the graph for Studio UI
-__all__ = ["graph"]
+__all__ = ["graph", "attacker_graph", "recon_graph", "planning_graph", "reporting_graph"]
+
+
 
 """
 # Initialize state with proper PenTestState structure

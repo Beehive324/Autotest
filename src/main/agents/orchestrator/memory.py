@@ -5,11 +5,11 @@ from langgraph.graph import MessagesState
 from langchain_core.messages import BaseMessage
 from typing import Annotated, Sequence
 from langgraph.graph import add_messages
+from langchain_core.messages import AIMessage
 
 
 class Messages(BaseModel):
     summary: str
-
 
 class Vulnerability(BaseModel):
     """Represents a discovered vulnerability"""
@@ -98,7 +98,7 @@ def supervisor_routing(state: PenTestState) -> str:
             return "recon"
             
         elif state.current_phase == "attack":
-            if (state.successful_exploits or state.failed_exploits) and is_phase_complete(state, "attack"):
+            if len(state.successful_exploits) > 0:
                 next_phase = "reporting"
                 if validate_phase_transition(state, next_phase):
                     state.current_phase = next_phase

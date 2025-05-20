@@ -59,6 +59,11 @@ class Recon(Runnable):
             prompt="You are a subdomain enumeration expert. Your task is to discover subdomains and related infrastructure.",
             name="subdomain_enum"
         )
+        
+        # Create and store the workflow graph
+        self.workflow = self._create_graph()
+        self.add_graph_edges(self.workflow)
+        self.workflow = self.workflow.compile()  # Compile the workflow
 
     @property
     def input_schema(self) -> Type[PenTestState]:
@@ -86,12 +91,8 @@ class Recon(Runnable):
             if not hasattr(state, 'messages'):
                 state.messages = []
                 
-            # Create and run the recon workflow
-            graph = self._create_graph()
-            self.add_graph_edges(graph)
-            compiled_graph = graph.compile()
-            state = compiled_graph.invoke(state)
-            
+            # Use the stored workflow
+            state = self.workflow.invoke(state)
             return state
             
         except Exception as e:
@@ -115,12 +116,8 @@ class Recon(Runnable):
             if not hasattr(state, 'messages'):
                 state.messages = []
                 
-            # Create and run the recon workflow
-            graph = self._create_graph()
-            self.add_graph_edges(graph)
-            compiled_graph = graph.compile()
-            state = await compiled_graph.ainvoke(state)
-            
+            # Use the stored workflow
+            state = await self.workflow.ainvoke(state)
             return state
             
         except Exception as e:
@@ -129,36 +126,53 @@ class Recon(Runnable):
             return state
 
 
-    def _port_scanning_phase(self, state: PenTestState) -> PenTestState:
-        model_with_tools = self.model.bind_tools(self.tools)
-        result = model_with_tools.invoke(f"Scan {state.ip_port} for open ports using nmap")
-        
-        if isinstance(result, AIMessage):
-            content = result.content
-        else:
-            content = str(result)
-        
-        for line in content:
-            if line.strip():
-                #state.messages.append(AIMessage(content=line))
-                state.open_ports.append(line)
-                state.services.append(line)
-        
-        return state
-        
+    def _port_scanning_phase(self, state: PenTestState):
+        new_messages = []
+        new_open_ports = []
+        new_services = []
+        input_message = {
+            "role": "user",
+            "content": f"Scan {state.ip_port} for open ports using nmap"
+        }
+        for step in self.port_scanner.stream(
+            {"messages": [input_message]},
+            stream_mode="values",
+        ):
+            msg = step["messages"][-1]
+            new_messages.append(msg)
+            new_open_ports.append(msg.content)
+            new_services.append(msg.content)
+        # Return only the updates!
+        return {
+            "messages": state.messages + new_messages,
+            "open_ports": state.open_ports + new_open_ports,
+            "services": state.services + new_services,
+        }
     
-    def _vulnerability_analysis_phase(self, state: PenTestState) -> PenTestState:
-        
-        model_with_tools =self.model.bind_tools(self.tools)
-        
-        result = model_with_tools.invoke(f"Analyze the scan results for {state.ip_port}")
-        
-        for line in result:
-            #state.messages.append(AIMessage(content=line))
-            state.vulnerabilities.append(line) 
-        
-        return state
-        
+    def _vulnerability_analysis_phase(self, state: PenTestState):
+        new_messages = []
+        new_vulnerabilities = []
+        new_services = []
+        new_open_ports = []
+        input_message = {
+            "role": "user",
+            "content": f"Analyze the scan results for {state.ip_port}"
+        }
+        for step in self.vulnerability_analyzer.stream(
+            {"messages": [input_message]},
+            stream_mode="values",
+        ):
+            msg = step["messages"][-1]
+            new_messages.append(msg)
+            new_vulnerabilities.append(msg.content)
+            new_services.append(msg.content)
+            new_open_ports.append(msg.content)
+        return {
+            "messages": state.messages + new_messages,
+            "vulnerabilities": state.vulnerabilities + new_vulnerabilities,
+            "services": state.services + new_services,
+            "open_ports": state.open_ports + new_open_ports,
+        }
     
     def _subdomain_enumeration_phase(self, state: PenTestState) -> PenTestState:
         """Perform subdomain enumeration if target is a domain.

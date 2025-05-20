@@ -1,7 +1,11 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "main": "src.main.graph:graph"
+    "main": "src.main.graph:graph",
+    "attacker": "src.main.graph:attacker_graph",
+    "recon": "src.main.graph:recon_graph",
+    "planning": "src.main.graph:planning_graph",
+    "reporting": "src.main.graph:reporting_graph"
   },
   "env": ".env",
   "python_version": "3.11",
