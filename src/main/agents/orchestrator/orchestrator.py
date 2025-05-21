@@ -15,9 +15,7 @@ from langgraph.prebuilt.chat_agent_executor import (
 from langgraph.pregel import Pregel
 from langgraph.utils.runnable import RunnableCallable
 
-
 from ..orchestrator.agent_name import AgentNameMode, with_agent_name
-
 from ..orchestrator.handoff import (
     METADATA_KEY_HANDOFF_DESTINATION,
     _normalize_agent_name,
@@ -32,9 +30,7 @@ OutputMode = Literal["full_history", "last_message"]
 - `last_message`: add only the last message
 """
 
-
 MODELS_NO_PARALLEL_TOOL_CALLS = {"o3-mini", "o3", "o4-mini"}
-
 
 def _supports_disable_parallel_tool_calls(model: LanguageModelLike) -> bool:
     if not isinstance(model, BaseChatModel):
@@ -50,7 +46,6 @@ def _supports_disable_parallel_tool_calls(model: LanguageModelLike) -> bool:
         return False
 
     return True
-
 
 def _make_call_agent(
     agent: Pregel,
@@ -69,7 +64,6 @@ def _make_call_agent(
             pass
         elif output_mode == "last_message":
             messages = messages[-1:]
-
         else:
             raise ValueError(
                 f"Invalid agent output mode: {output_mode}. "
@@ -94,7 +88,6 @@ def _make_call_agent(
 
     return RunnableCallable(call_agent, acall_agent)
 
-
 def _get_handoff_destinations(tools: list[BaseTool | Callable]) -> list[str]:
     """Extract handoff destinations from provided tools.
     Args:
@@ -110,9 +103,8 @@ def _get_handoff_destinations(tools: list[BaseTool | Callable]) -> list[str]:
         and METADATA_KEY_HANDOFF_DESTINATION in tool.metadata
     ]
 
-
 def create_supervisor(
-    agents: list[Pregel],
+    agents: list[Pregel] | None = None,
     *,
     model: LanguageModelLike,
     tools: list[BaseTool | Callable] | None = None,
@@ -243,45 +235,47 @@ def create_supervisor(
     """
     if add_handoff_back_messages is None:
         add_handoff_back_messages = add_handoff_messages
+
     agent_names = set()
-    for agent in agents:
-        if agent.name is None or agent.name == "LangGraph":
-            raise ValueError(
-                "Please specify a name when you create your agent, either via `create_react_agent(..., name=agent_name)` "
-                "or via `graph.compile(name=name)`."
-            )
+    if agents is not None:
+        for agent in agents:
+            if agent.name is None or agent.name == "LangGraph":
+                raise ValueError(
+                    "Please specify a name when you create your agent, either via `create_react_agent(..., name=agent_name)` "
+                    "or via `graph.compile(name=name)`."
+                )
 
-        if agent.name in agent_names:
-            raise ValueError(
-                f"Agent with name '{agent.name}' already exists. Agent names must be unique."
-            )
+            if agent.name in agent_names:
+                raise ValueError(
+                    f"Agent with name '{agent.name}' already exists. Agent names must be unique."
+                )
 
-        agent_names.add(agent.name)
+            agent_names.add(agent.name)
 
-    handoff_destinations = _get_handoff_destinations(tools or [])
-    if handoff_destinations:
-        if missing_handoff_destinations := set(agent_names) - set(handoff_destinations):
-            raise ValueError(
-                "When providing custom handoff tools, you must provide them for all subagents. "
-                f"Missing handoff tools for agents '{missing_handoff_destinations}'."
-            )
-
-        # Handoff tools should be already provided here
-        all_tools = tools or []
-    else:
-        handoff_destinations = [
-            create_handoff_tool(
-                agent_name=agent.name,
-                name=(
-                    None
-                    if handoff_tool_prefix is None
-                    else f"{handoff_tool_prefix}{_normalize_agent_name(agent.name)}"
-                ),
-                add_handoff_messages=add_handoff_messages,
-            )
-            for agent in agents
-        ]
-        all_tools = (tools or []) + handoff_destinations
+    # Handle tools and handoff destinations
+    all_tools = tools or []
+    if agents is not None:
+        handoff_destinations = _get_handoff_destinations(tools or [])
+        if handoff_destinations:
+            if missing_handoff_destinations := set(agent_names) - set(handoff_destinations):
+                raise ValueError(
+                    "When providing custom handoff tools, you must provide them for all subagents. "
+                    f"Missing handoff tools for agents '{missing_handoff_destinations}'."
+                )
+        else:
+            handoff_destinations = [
+                create_handoff_tool(
+                    agent_name=agent.name,
+                    name=(
+                        None
+                        if handoff_tool_prefix is None
+                        else f"{handoff_tool_prefix}{_normalize_agent_name(agent.name)}"
+                    ),
+                    add_handoff_messages=add_handoff_messages,
+                )
+                for agent in agents
+            ]
+            all_tools = all_tools + handoff_destinations
 
     if _supports_disable_parallel_tool_calls(model):
         model = model.bind_tools(all_tools, parallel_tool_calls=parallel_tool_calls)
@@ -301,18 +295,26 @@ def create_supervisor(
     )
 
     builder = StateGraph(state_schema, config_schema=config_schema)
-    builder.add_node(supervisor_agent, destinations=tuple(agent_names) + (END,))
-    builder.add_edge(START, supervisor_agent.name)
-    for agent in agents:
-        builder.add_node(
-            agent.name,
-            _make_call_agent(
-                agent,
-                output_mode,
-                add_handoff_back_messages=add_handoff_back_messages,
-                supervisor_name=supervisor_name,
-            ),
-        )
-        builder.add_edge(agent.name, supervisor_agent.name)
+    
+    # Add supervisor node with appropriate destinations
+    if agents is not None:
+        builder.add_node(supervisor_agent, destinations=tuple(agent_names) + (END,))
+        # Add agent nodes and edges
+        for agent in agents:
+            builder.add_node(
+                agent.name,
+                _make_call_agent(
+                    agent,
+                    output_mode,
+                    add_handoff_back_messages=add_handoff_back_messages,
+                    supervisor_name=supervisor_name,
+                ),
+            )
+            builder.add_edge(agent.name, supervisor_agent.name)
+    else:
+        # If no agents, supervisor only connects to END
+        builder.add_node(supervisor_agent, destinations=(END,))
 
+    builder.add_edge(START, supervisor_agent.name)
+    
     return builder

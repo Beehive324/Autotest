@@ -170,6 +170,7 @@ class Attacker(Runnable):
                 "result": msg.content,
                 "timestamp": datetime.now().isoformat()
             })
+            
         return {
             "messages": state.messages + new_messages,
             "successful_exploits": state.successful_exploits + new_successful_exploits,

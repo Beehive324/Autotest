@@ -28,7 +28,7 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 import nest_asyncio
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import Runnable
-from langgraph_supervisor import create_supervisor
+from ..main.agents.orchestrator.orchestrator import create_supervisor
 
 local_model = "llama3.2"
 
@@ -124,7 +124,6 @@ def create_workflow():
     
     # Create supervisor as a runnable agent
     supervisor = create_supervisor(
-        [Planner(model=model), Recon(model=model), Attacker(model=model), Reporter(model=model)],
         model=model,
         prompt="""You are a Pentest orchestrator overseeing and managing a team of pentest experts.
         You are responsible for the overall direction of the pentest and the coordination of the team.
