@@ -6,7 +6,11 @@ from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, START, END
 from datetime import datetime
-from ...agents.orchestrator.memory import PenTestState
+from ..orchestrator.memory import PenTestState
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+from langchain_ollama import ChatOllama
+from langchain_core.runnables import RunnablePassthrough
 
 
 

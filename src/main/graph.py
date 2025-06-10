@@ -12,15 +12,15 @@ import graphviz
 from datetime import datetime
 from IPython.display import Image
 from .configuration import Configuration
-from .agents.orchestrator.memory import PenTestState, Vulnerability, Service, Subdomain
-from .agents.recon_phase.recon import Recon
-from .agents.planning_phase.planner import Planner
-from .agents.attacking_phase.attacker import Attacker
-from .agents.reporting_phase.reporter import Reporter
+from .phases.orchestrator.memory import PenTestState, Vulnerability, Service, Subdomain
+from .phases.recon_phase.recon import Recon
+from .phases.planning_phase.planner import Planner
+from .phases.attack_phase.modules.attacker import Attacker
+from .phases.reporting_phase.reporter import Reporter
 from IPython.display import Image, display
-from .agents.orchestrator.orchestrator import create_supervisor
+from .phases.orchestrator.orchestrator import create_supervisor
 from langgraph.prebuilt import create_react_agent
-from .agents.recon_phase.tools.recontools import Nmap
+from .phases.recon_phase.tools.recontools import Nmap
 from langchain_core.prompts import PromptTemplate
 from langchain.agents import AgentExecutor
 from langchain_community.tools import ShellTool
@@ -28,7 +28,6 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 import nest_asyncio
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import Runnable
-from ..main.agents.orchestrator.orchestrator import create_supervisor
 
 local_model = "llama3.2"
 

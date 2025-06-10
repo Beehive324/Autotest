@@ -3,7 +3,6 @@ from langchain_core.tools import tool
 import requests
 from pydantic import BaseModel, Field
 import sublist3r
-from ...state import PenTestState
 from typing import List, Optional, Dict, Annotated, Sequence, TypedDict, Any, Type
 from langchain.tools import Tool
 from langgraph.graph import StateGraph, END, START
@@ -19,9 +18,13 @@ from langgraph.prebuilt import create_react_agent
 from langgraph_swarm import create_handoff_tool, create_swarm
 from langchain_core.runnables import Runnable
 from langchain_community.tools import ShellTool
-from ...agents.orchestrator.memory import PenTestState
+from ...orchestrator.memory import PenTestState
 from langchain.prompts import PromptTemplate
 from langchain.agents import AgentExecutor
+from langchain_ollama import ChatOllama
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 logger = logging.getLogger(__name__)
 
@@ -252,8 +255,6 @@ class Attacker(Runnable):
 
 # Local testing
 if __name__ == "__main__":
-    from langchain_ollama import ChatOllama
-    
     # Initialize with Ollama model
     model = ChatOllama(model="llama2", temperature=1)
     attacker = Attacker(model)

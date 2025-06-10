@@ -2,10 +2,9 @@ from datetime import datetime
 from langchain_core.tools import tool
 import requests
 import nmap
-from typing import Optional, List, Dict, Type
+from typing import Optional, List, Dict, Type, Any
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
-from ...agents.orchestrator.memory import PenTestState
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool
 from langchain.tools import Tool
@@ -16,6 +15,11 @@ from langgraph.prebuilt import create_react_agent
 from langgraph_swarm import create_handoff_tool, create_swarm
 from langchain_core.runnables import Runnable, RunnableConfig
 from fpdf import FPDF
+from langchain_ollama import ChatOllama
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from ..orchestrator.memory import PenTestState
 
 class Reporter(Runnable):
     def __init__(self, model):
@@ -201,8 +205,6 @@ class Reporter(Runnable):
         return display(Image(graph_path))
 
 if __name__ == "__main__":
-    from langchain_ollama import ChatOllama
-    
     # Initialize with Ollama model
     model = ChatOllama(model="llama2", temperature=1)
     reporter = Reporter(model)
