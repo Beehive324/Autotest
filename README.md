@@ -18,11 +18,6 @@ cd A-Multi-Agent-Framework-for-Automated-Pentesting
 pip install -r requirements.txt
 ```
 
-### 2. Configuration
-```bash
-# Set your local model path
-export MODEL_PATH="/path/to/your/local/model"
-```
 
 ### 3. Run
 ```bash
@@ -52,115 +47,8 @@ This framework implements an advanced multi-agent system for automated penetrati
    - Exploitation Agent: Vulnerability exploitation
    - Reporting Agent: Security assessment documentation
 
-## Framework Commands
 
-### Installation Commands
-- Repository cloning
-- Dependency installation
-- Environment configuration
 
-### Configuration Commands
-- API key setup
-- Target specification
-- Scope definition
-- Assessment depth configuration
-
-### Execution Commands
-- Agent initialization
-- Workflow compilation
-- Assessment execution
-- Report generation
-
-## Operational Parameters
-
-### Model Configuration
-- Language model selection
-- Model parameter tuning
-- Response formatting
-- Tool binding configuration
-
-### Workflow Settings
-- Output mode selection
-- Parallel execution control
-- Handoff behavior configuration
-- State management parameters
-
-## Security Protocols
-
-### Authorization Requirements
-- Target system permissions
-- API access credentials
-- Security clearance levels
-- Legal compliance verification
-
-### Operational Guidelines
-- Responsible disclosure procedures
-- Data handling protocols
-- Security breach protocols
-- Incident response procedures
-
-## Framework Capabilities
-
-### Assessment Types
-- Web application security
-- API security
-- Network security
-- Infrastructure security
-
-### Analysis Methods
-- Automated scanning
-- Vulnerability detection
-- Exploitation testing
-- Risk assessment
-
-## Integration Capabilities
-
-### External Systems
-- Security information and event management (SIEM)
-- Vulnerability management systems
-- Incident response platforms
-- Compliance monitoring tools
-
-### Data Exchange
-- Assessment results
-- Vulnerability reports
-- Security metrics
-- Compliance documentation
-
-## Performance Metrics
-
-### Assessment Metrics
-- Scan completion time
-- Vulnerability detection rate
-- False positive ratio
-- Coverage percentage
-
-### System Metrics
-- Resource utilization
-- Response time
-- Agent coordination efficiency
-- Workflow completion rate
-
-## Future Developments
-
-### Planned Enhancements
-- Advanced agent capabilities
-- Extended assessment methodologies
-- Enhanced integration capabilities
-- Improved reporting mechanisms
-
-### Research Directions
-- Machine learning integration
-- Automated remediation
-- Real-time threat detection
-- Adaptive security assessment
-
-## References
-
-- LangGraph Framework Documentation
-- LangChain Implementation Guidelines
-- Security Assessment Standards
-- AI Agent Architecture Patterns
 
 
 
