@@ -19,9 +19,9 @@ pip install -r requirements.txt
 ```
 
 
-### 3. Run
+### 3. Run Langgraph Studio Locally
 ```bash
-python src/main/run.py --target example.com --scope web,api --depth medium --model local
+langgraph dev
 ```
 
 ## Security Note
