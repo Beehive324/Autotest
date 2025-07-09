@@ -2,13 +2,6 @@
 
 ![image](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
 
-## Quick Start
-
-1. Clone the repository
-2. Install dependencies
-3. Configure local model settings
-4. Run the framework
-
 ## Running Instructions
 
 ### 1. Setup
@@ -19,7 +12,7 @@ pip install -r requirements.txt
 ```
 
 
-### 3. Run Langgraph Studio Locally
+### 2. Run Langgraph Studio Locally
 ```bash
 langgraph dev
 ```
