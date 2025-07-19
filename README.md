@@ -3,12 +3,13 @@
 
 ![image](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
 
-<img width="630" height="200" alt="IMG_9952" src="https://github.com/user-attachments/assets/2318639d-6877-421f-84be-b265430f96d9" />
 
 
 ## Running Instructions
 
 https://github.com/user-attachments/assets/abd7ce70-a3b2-4b5f-8595-a8eead567d2c
+
+<img width="630" height="200" alt="IMG_9952" src="https://github.com/user-attachments/assets/2318639d-6877-421f-84be-b265430f96d9" />
 
 ### 1. Setup
 ```bash
