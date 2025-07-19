@@ -6,7 +6,7 @@ This is a proof of concept and not to be used to carry out pentests on real worl
 
 ## Abstract
 
-This framework implements a multi-agent system for automated penetration testing, utilizing a reasoning model to coordinate and execute security assessments.The system employs a hierarchical architecture with specialized agents working under the supervision of an orchestrator, for the purpose of enabling security analysis and vulnerability assessment.
+A proof of concept multi-agent system for automated penetration testing, utilizing the ReAct paradigm to enable reasoning driven coordination and execution at each stage of the penetration test.The system employs a hierarchical architecture with specialized agents working under the supervision of an orchestrator, for the purpose of enabling security analysis and vulnerability assessment.
 
 ## System Architecture
 
