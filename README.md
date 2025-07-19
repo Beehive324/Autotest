@@ -53,7 +53,7 @@ langgraph dev
 - Expand on the 4-tier model approach
 - Web UI Interface
 - API
-- Deploy ClI 
+- Deploy CLI
 
 
 
