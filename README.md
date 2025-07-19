@@ -2,7 +2,7 @@
 
 
 ## Disclaimer
-This is a proof concept and not to be used to carry out pentests on real world applications
+This is a proof of concept and not to be used to carry out pentests on real world applications
 
 ## Abstract
 
