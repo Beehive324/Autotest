@@ -1,9 +1,7 @@
 # Multi-Agent Framework for Automated Pentesting
+<img width="450" height="120" alt="IMG_9952" src="https://github.com/user-attachments/assets/2318639d-6877-421f-84be-b265430f96d9" />
 
 ![image](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
-
-
-<img width="341" height="96" alt="IMG_9952" src="https://github.com/user-attachments/assets/2318639d-6877-421f-84be-b265430f96d9" />
 
 
 ## Running Instructions
