@@ -47,9 +47,9 @@ This framework implements an advanced multi-agent system for automated penetrati
 
 2. **Specialized Agents**
    - Reconnaissance Agent: Target scanning and information gathering
-   - Vulnerability Assessment Agent: Security vulnerability analysis
-   - Exploitation Agent: Vulnerability exploitation
-   - Reporting Agent: Security assessment documentation
+   - Planner Agent: Security vulnerability analysis
+   - Attack Agent: Vulnerability exploitation
+   - Reporting Agent: Security assessment documentation in pdf format
 
 
 
