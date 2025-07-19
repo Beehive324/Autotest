@@ -51,6 +51,9 @@ langgraph dev
 - Buffer Overlfow Attack Integration
 - Further security tools integration
 - Expand on the 4-tier model approach
+- Web UI Interface
+- API
+- Deploy ClI 
 
 
 
