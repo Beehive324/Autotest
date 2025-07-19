@@ -1,6 +1,10 @@
 # Multi-Agent Framework for Automated Pentesting
 
 
+## Disclaimer
+This is a proof concept and not to be used to carry out pentests on real world applications
+
+
 ![image](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
 
 
