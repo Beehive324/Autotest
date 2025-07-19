@@ -28,12 +28,10 @@ pip install -r requirements.txt
 langgraph dev
 ```
 
-## Security Note
-Always ensure you have proper authorization before running security assessments on any target system.
 
 ## Abstract
 
-This framework implements an advanced multi-agent system for automated penetration testing, utilizing artificial intelligence to coordinate and execute comprehensive security assessments. The system employs a hierarchical architecture with specialized agents working under the supervision of an orchestrator, enabling sophisticated security analysis and vulnerability assessment.
+This framework implements a multi-agent system for automated penetration testing, utilizing artificial intelligence to coordinate and execute security assessments. The system employs a hierarchical architecture with specialized agents working under the supervision of an orchestrator, for enabling security analysis and vulnerability assessment.
 
 ## System Architecture
 
