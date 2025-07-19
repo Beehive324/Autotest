@@ -27,10 +27,6 @@ This framework implements a multi-agent system for automated penetration testing
 
 ![image](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
 
-## TODO
-- Buffer Overlfow Attack
-- Different model integration
-
 
 ## Running Instructions
 
@@ -50,9 +46,11 @@ pip install -r requirements.txt
 langgraph dev
 ```
 
-
-
-
+## TODO
+- Different model integration
+- Buffer Overlfow Attack Integration
+- Further security tools integration
+- Expand on the 4-tier model approach
 
 
 
