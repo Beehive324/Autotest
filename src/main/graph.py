@@ -78,42 +78,6 @@ def create_agents() -> Dict[str, Any]:
     shell_tool = ShellTool()
     
     
-    # Create agents with proper prompt templates and tool instances
-    explorer = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for exploring the target and gathering information about the target. You have access to the following tools: {tools}",
-        name="explorer"
-    )
-    
-    planner = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for planning the pentest. You have access to the following tools: {tools}",
-        name="planner"
-    )
-    
-    attacker = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for attacking the target. You have access to the following tools: {tools}",
-        name="attacker"
-    )
-    
-    reporter = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for reporting the results of the pentest. You have access to the following tools: {tools}",
-        name="reporter"
-    )
-    
-    return {
-        "explorer": explorer,
-        "planner": planner,
-        "attacker": attacker,
-        "reporter": reporter
-    }
-
 def create_workflow():
     """Create the main pentesting workflow graph with conditional edges and supervisor"""
     agents = create_agents()
