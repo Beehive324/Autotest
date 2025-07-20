@@ -76,6 +76,8 @@ def create_agents() -> Dict[str, Any]:
     # Create tool instances
     nmap_tool = Nmap()
     shell_tool = ShellTool()
+
+    return agents
     
     
 def create_workflow():
