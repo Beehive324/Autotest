@@ -43,80 +43,9 @@ def initialize_agents() -> Dict[str, Any]:
         "reporter": Reporter(model=model)
     }
 
-def create_agents() -> Dict[str, Any]:
-    agents = initialize_agents()
-    
-    # Create base prompt template
-    base_template = """Answer the following questions as best you can. You have access to the following tools:
-
-    {tools}
-
-    Use the following format:
-
-    Question: the input question you must answer
-    Thought: you should always think about what to do
-    Action: the action to take, should be one of [{tool_names}]
-    Action Input: the input to the action
-    Observation: the result of the action
-    ... (this Thought/Action/Action Input/Observation can repeat N times)
-    Thought: I now know the final answer
-    Final Answer: the final answer to the original input question
-
-    Begin!
-
-    Question: {input}
-    Thought:{agent_scratchpad}"""
-
-    # Create prompt templates for each agent
-    explorer_prompt = PromptTemplate.from_template(base_template)
-    planner_prompt = PromptTemplate.from_template(base_template)
-    attacker_prompt = PromptTemplate.from_template(base_template)
-    reporter_prompt = PromptTemplate.from_template(base_template)
-    
-    # Create tool instances
-    nmap_tool = Nmap()
-    shell_tool = ShellTool()
-    
-    
-    # Create agents with proper prompt templates and tool instances
-    explorer = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for exploring the target and gathering information about the target. You have access to the following tools: {tools}",
-        name="explorer"
-    )
-    
-    planner = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for planning the pentest. You have access to the following tools: {tools}",
-        name="planner"
-    )
-    
-    attacker = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for attacking the target. You have access to the following tools: {tools}",
-        name="attacker"
-    )
-    
-    reporter = create_react_agent(
-        model=model,
-        tools=[shell_tool],
-        prompt="You are a pentest expert. You are responsible for reporting the results of the pentest. You have access to the following tools: {tools}",
-        name="reporter"
-    )
-    
-    return {
-        "explorer": explorer,
-        "planner": planner,
-        "attacker": attacker,
-        "reporter": reporter
-    }
 
 def create_workflow():
     """Create the main pentesting workflow graph with conditional edges and supervisor"""
-    agents = create_agents()
     
     # Create the workflow graph
     workflow = StateGraph(PenTestState)
