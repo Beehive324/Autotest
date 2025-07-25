@@ -13,7 +13,6 @@ from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
 
 
-
 class Planner(Runnable):
     def __init__(self, model):
         """Initialize the Planner with a language model.
@@ -43,7 +42,7 @@ class Planner(Runnable):
             Thought: I now know the final answer
             Final Answer: the final answer to the original input question
 
-            Begin!
+            Begin
 
             Question: {input}
             Thought:{agent_scratchpad}"""
@@ -161,89 +160,51 @@ class Planner(Runnable):
             SystemMessage(content=planner_instructions),
             HumanMessage(content=f"Analyze the following nmap results and create a detailed testing plan: {state.open_ports}")
         ])
-        return {
-            "messages": state.messages + [AIMessage(content=str(plan))],
-            "planning_results": {
-                "start_time": datetime.now(),
-                "scope": "Initial scope defined",
-                "objectives": ["Identify vulnerabilities", "Assess security posture"],
-                "planning_results": plan,
-                "last_updated": datetime.now()
-            }
-        }
+        state.messages.append(AIMessage(content=str(plan)))
+        state.planning_results.append({
+            "start_time": datetime.now(),
+            "scope": "Initial scope defined",
+            "objectives": ["Identify vulnerabilities", "Assess security posture"],
+            "planning_results": plan,
+            "last_updated": datetime.now()
+        })
+        return state
     
     async def _risk_assessment(self, state: PenTestState):
-        """Perform initial risk assessment.
-        
-        Args:
-            state: Current state of the penetration test
-            
-        Returns:
-            Updated state with risk assessment results
-        """
+        """Perform initial risk assessment."""
         if not state.planning_results:
             state.planning_results = {}
-            
         risk_instructions = f"""Based on the open ports {state.open_ports}, assess the following:
         1. Critical assets that might be exposed
         2. Potential threat actors
         3. Possible attack vectors
         4. Overall risk level
         """
-        
         risk_assessment = self.model.invoke([
             SystemMessage(content=risk_instructions),
             HumanMessage(content="Provide a detailed risk assessment")
         ])
-            
-        return {
-            "messages": state.messages + [AIMessage(content=str(risk_assessment))],
-            "planning_results": {
-                "critical_assets": [],
-                "threat_actors": [],
-                "attack_vectors": [],
-                "risk_level": "medium",
-                "risk_assessment": risk_assessment,
-                "last_updated": datetime.now()
-            }
-        }
+        state.messages.append(AIMessage(content=str(risk_assessment)))
+      
+        return state
     
     async def _define_scope(self, state: PenTestState):
-        """Define the scope of the pentest.
-        
-        Args:
-            state: Current state of the penetration test
-            
-        Returns:
-            Updated state with defined scope
-        """
+        """Define the scope of the pentest."""
         if not state.planning_results:
             state.planning_results = {}
-            
         scope_instructions = f"""Based on the target {state.ip_port}, define a clear scope including:
         1. Specific targets to test
         2. Any exclusions or limitations
         3. Testing methodologies to be used
         """
-        
         scope_definition = self.model.invoke([
             SystemMessage(content=scope_instructions),
             HumanMessage(content="Define the testing scope")
         ])
-            
-        return {
-            "messages": state.messages + [AIMessage(content=str(scope_definition))],
-            "planning_results": {
-                "scope": {
-                    "targets": state.ip_port,
-                    "exclusions": [],
-                    "testing_methods": ["automated", "manual"],
-                    "scope_definition": scope_definition
-                },
-                "last_updated": datetime.now()
-            },
-            "current_phase": "planning"
-        }
+        state.messages.append(AIMessage(content=str(scope_definition)))
+       
+        state.current_phase = "planning"
+        return state
     
     def _create_graph(self) -> StateGraph:
         """Create the planning workflow graph.

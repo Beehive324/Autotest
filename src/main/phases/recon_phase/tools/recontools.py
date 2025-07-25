@@ -5,7 +5,6 @@ import requests
 import sublist3r
 import nmap
 import dns.resolver
-from ..state import ReconState
 from langchain_ollama import ChatOllama
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool

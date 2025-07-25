@@ -6,6 +6,8 @@ from langchain_core.messages import BaseMessage
 from typing import Annotated, Sequence
 from langgraph.graph import add_messages
 from langchain_core.messages import AIMessage
+import operator
+from typing import Any
 
 
 class Messages(BaseModel):
@@ -41,19 +43,23 @@ class Subdomain(BaseModel):
 
 class PenTestState(BaseModel):
     """State for the pentesting workflow"""
-    ip_port: str = "localhost"
-    planning_results: Dict = {}
-    vulnerabilities: List[Vulnerability] = []
-    services: List[Service] = []
-    subdomains: List[Subdomain] = []
-    open_ports: List[int] = []
-    successful_exploits: List[str] = []
-    failed_exploits: List[str] = []
-    risk_score: float = 0.0
-    remaining_steps: int = 5
+    ip_port: Annotated[str, lambda prev, next: next] = "localhost"
+    risk_score: Annotated[float, lambda prev, next: next] = 0.0
+    remaining_steps: Annotated[int, lambda prev, next: next] = 5
+    current_phase: Annotated[str, lambda prev, next: next] = "planning"
+    start_time: Annotated[Any, lambda prev, next: next]
+    
+    # --- Fields that should ACCUMULATE results in a list ---
+    planning_results: Annotated[list, operator.add] = []
+    vulnerabilities: Annotated[List[Vulnerability], operator.add] = []
+    services: Annotated[List[Service], operator.add] = []
+    subdomains: Annotated[List[Subdomain], operator.add] = []
+    open_ports: Annotated[List[int], operator.add] = []
+    successful_exploits: Annotated[List[str], operator.add] = []
+    failed_exploits: Annotated[List[str], operator.add] = []
+
+    # --- Field with a custom message handling function ---
     messages: Annotated[Sequence[BaseMessage], add_messages] = []
-    start_time: datetime = Field(default_factory=datetime.now)
-    current_phase: str = "planning"
     
     def validate_state(self) -> bool:
         """Validate the current state"""

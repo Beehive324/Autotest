@@ -1,7 +1,6 @@
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END, START
 from langchain.tools import Tool
-from .state import ReconState
 from .tools.recontools import (
     Nmap, Resolve, 
     Subdomain_Enum_CRT, Subdomain_Enum_gobuster, Subdomain_Enum_findomain,

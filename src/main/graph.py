@@ -239,7 +239,7 @@ __all__ = ["graph", "attacker_graph", "recon_graph", "planning_graph", "reportin
 # Initialize state with proper PenTestState structure
 initial_state = PenTestState(
     ip_port="localhost",
-    planning_results={},
+    planning_results=[],
     vulnerabilities=[],
     services=[],
     subdomains=[],
