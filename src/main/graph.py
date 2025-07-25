@@ -28,11 +28,17 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 import nest_asyncio
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import Runnable
+from langchain_openai import ChatOpenAI
+import logging
 
-local_model = "llama3.2"
 
+logger = logging.getLogger(__name__)
 
-model = ChatOllama(model=local_model, temperature=1)
+local_model = "llama3.2:3b"
+#Ollama Local Model
+#model = ChatOllama(model=local_model, temperature=0.1)
+
+model = ChatOpenAI(model='gpt-4o', temperature=0.1)
 
 def initialize_agents() -> Dict[str, Any]:
     """Initialize all agents for the pentesting workflow"""
@@ -42,7 +48,6 @@ def initialize_agents() -> Dict[str, Any]:
         "attacker": Attacker(model=model),
         "reporter": Reporter(model=model)
     }
-
 
 def create_workflow():
     """Create the main pentesting workflow graph with conditional edges and supervisor"""
@@ -231,8 +236,6 @@ reporting_graph = reporter.workflow
 __all__ = ["graph", "attacker_graph", "recon_graph", "planning_graph", "reporting_graph"]
 
 
-
-"""
 # Initialize state with proper PenTestState structure
 initial_state = PenTestState(
     ip_port="localhost",
@@ -248,6 +251,7 @@ initial_state = PenTestState(
     messages=[HumanMessage(content="Start pentesting on localhost")],
     chat_history=[],
     start_time=datetime.now()
+    
 )
 
 # Run the workflow
@@ -263,4 +267,3 @@ async def run_pentest():
 if __name__ == "__main__":
     import asyncio
     asyncio.run(run_pentest())
-"""

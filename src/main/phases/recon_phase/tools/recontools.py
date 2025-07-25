@@ -23,8 +23,6 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-
-
 #Tools for Reconnaisance Phase, in order ot perform a full scan of the target and identify all open ports and services
 tavily_api_key = os.getenv('TAVILY_API_KEY')
 if not tavily_api_key:
@@ -274,8 +272,7 @@ class Nmap(BaseTool):
         except Exception as e:
             logging.error(f"An error has occured")
         
-        
-           
+                  
 class Resolve(BaseTool):
     name: str = Field(default="resolver", description="resolves domains")
     description: str = Field(default="resolves domains")
