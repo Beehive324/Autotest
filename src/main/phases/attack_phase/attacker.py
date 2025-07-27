@@ -107,7 +107,7 @@ class Attacker(Runnable):
         """Return the output schema type."""
         return PenTestState
 
-    def invoke(self, state: PenTestState, config: Optional[RunnableConfig] = None, **kwargs) -> PenTestState:
+    def invoke(self, state: PenTestState, config: Optional[Runnable] = None, **kwargs) -> PenTestState:
         """Synchronously invoke the attacker agent.
         
         Args:
@@ -136,7 +136,7 @@ class Attacker(Runnable):
             state.messages.append(AIMessage(content=error_message))
             return state
 
-    async def ainvoke(self, state: PenTestState, config: Optional[RunnableConfig] = None, **kwargs) -> PenTestState:
+    async def ainvoke(self, state: PenTestState, config: Optional[Runnable] = None, **kwargs) -> PenTestState:
         """Asynchronously invoke the attacker agent.
         
         Args:
