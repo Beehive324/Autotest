@@ -1,89 +1,49 @@
 # Multi-Agent Framework for Automated Pentesting
 
-<p align="center">
-<img alt="Framework in Action" src="https://github.com/user-attachments/assets/2318639d-6877-421f-84be-b265430f96d9" width="700">
-</p>
 
-A proof-of-concept multi-agent system for automated penetration testing. This framework utilizes the ReAct paradigm to enable reasoning-driven coordination and execution at each stage of a penetration test. It employs a hierarchical architecture with specialized agents working under the supervision of a central orchestrator to perform security analysis and vulnerability assessments.
+## Disclaimer
+This is a proof of concept and not to be used to carry out pentests on real world applications
 
----
+## Abstract
 
-### Disclaimer
+A proof of concept multi-agent system for automated penetration testing, utilizing the ReAct paradigm to enable reasoning driven coordination and execution at each stage of the penetration test.The system employs a hierarchical architecture with specialized agents working under the supervision of an orchestrator, for the purpose of enabling security analysis and vulnerability assessment.
 
-This project is a **proof of concept** intended for educational and research purposes only. It is **not** to be used for conducting penetration tests on real-world applications or any systems you do not have explicit, written permission to test. The authors are not responsible for any misuse or damage caused by this software.
+## System Architecture
 
----
+### Core Components
 
-### Key Features
+1. **Orchestrator**
+   - Central control unit managing agent interactions
+   - State management and workflow coordination
+   - Handoff management between specialized agents
+   - Execution flow control
 
-* **Hierarchical Agent Architecture:** A central orchestrator manages a team of specialized agents for a clear division of tasks.
-* **Autonomous Operation:** Agents can reason and make decisions to progress through the pentesting lifecycle from reconnaissance to reporting.
-* **Stateful Workflow:** The system maintains a comprehensive state, allowing for intelligent transitions and conditional logic between phases.
-* **Modular Design:** Easily extendable to include new agents, tools, and attack vectors.
-* **Powered by LangGraph:** Built on a reliable framework for creating stateful, multi-agent applications.
+2. **Specialized Agents**
+   - Reconnaissance Agent: Target scanning and information gathering
+   - Planner Agent: Security vulnerability analysis
+   - Attack Agent: Vulnerability exploitation
+   - Reporting Agent: Security assessment documentation in pdf format
 
----
 
-### System Architecture
+![image](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
 
-The framework is composed of a central **Orchestrator** and several **Specialized Agents**, each with a distinct role in the penetration testing process.
 
-![System Architecture Diagram](https://github.com/user-attachments/assets/bdf57f28-b3a9-48c4-804f-926f73cb6708)
+## Running Instructions
 
-#### Core Components
+https://github.com/user-attachments/assets/abd7ce70-a3b2-4b5f-8595-a8eead567d2c
 
-1.  **Orchestrator Agent:**
-    * The central control unit that manages the entire workflow.
-    * Coordinates interactions and handoffs between specialized agents.
-    * Maintains the overall state of the penetration test.
-    * Controls the execution flow based on the results from other agents.
+<img width="630" height="200" alt="IMG_9952" src="https://github.com/user-attachments/assets/2318639d-6877-421f-84be-b265430f96d9" />
 
-2.  **Specialized Agents:**
-    * **Reconnaissance Agent:** Gathers initial information about the target, performing scans for open ports, services, and potential entry points.
-    * **Planner Agent:** Analyzes reconnaissance data to identify potential vulnerabilities and formulates a strategic plan of attack.
-    * **Attack Agent:** Executes attacks based on the plan, attempting to exploit identified vulnerabilities.
-    * **Reporting Agent:** Documents all findings, including successful and failed exploits, to generate a comprehensive security assessment report.
-
----
-
-### Getting Started
-
-Follow these steps to set up and run the framework locally.
-
-#### Prerequisites
-* Python 3.8+
-* Git
-
-#### 1. Clone the Repository
+### 1. Setup
 ```bash
-git clone [https://github.com/yourusername/A-Multi-Agent-Framework-for-Automated-Pentesting.git](https://github.com/yourusername/A-Multi-Agent-Framework-for-Automated-Pentesting.git)
+git clone https://github.com/yourusername/A-Multi-Agent-Framework-for-Automated-Pentesting.git
 cd A-Multi-Agent-Framework-for-Automated-Pentesting
-```
-
-#### 2. Install Dependencies
-```bash
 pip install -r requirements.txt
 ```
-
-#### 3. Run LangGraph Studio
-This allows you to visualize and debug the agent interactions in real-time.
+### 2. Run Langgraph Studio Locally
 ```bash
 langgraph dev
 ```
-You can access the studio at [http://localhost:1984](http://localhost:1984).
-
----
-
-### Usage
-
-To start the penetration testing workflow, run the main application script and provide a target.
-```bash
-# Example of how to run the framework (update with your actual run command)
-python main.py --target example.com
-```
-
----
-
 ### Workflow Orchestration
 
 The core logic is managed by a `StateGraph` from LangGraph. A supervisor model routes tasks between agents based on the current state of the pentest. The graph includes conditional edges to handle transitions, feedback loops (e.g., perform more reconnaissance if an attack fails), and the final reporting stage.
@@ -164,30 +124,13 @@ def create_workflow():
 # Create and compile the workflow
 graph = create_workflow()
 ```
-
 ---
 
-### Roadmap
-
-This project is actively evolving. Future plans include:
-
-- [ ] Integration with additional language models (e.g., local models).
-- [ ] Implementation of more complex attack vectors, such as Buffer Overflows.
-- [ ] Integration with more industry-standard security tools (Metasploit, Nmap scripts).
-- [ ] Expansion of the current 4-agent model to handle more specialized tasks.
-- [ ] Development of a user-friendly Web UI and API.
-- [ ] Creation of a deployable Command-Line Interface (CLI).
-
----
-
-### Contributing
-
-Contributions are welcome! Please feel free to open an issue or submit a pull request.
-
-1.  Fork the repository.
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
-
----
+## TODO
+- Different model integration
+- Buffer Overlfow Attack Integration
+- Further security tools integration
+- Expand on the 4-tier model approach
+- Web UI Interface
+- API
+- Deploy CLI
