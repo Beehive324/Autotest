@@ -126,6 +126,22 @@ graph = create_workflow()
 ```
 ---
 
+## References
+
+1. **ReAct: Synergizing Reasoning and Acting in Language Models**  
+   Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., & Cao, Y. (2022)  
+   [arXiv:2210.03629](https://arxiv.org/abs/2210.03629)
+
+2. **IEEE Study on Multi-Agent Systems in Autonomous Workflows**  
+   IEEE document 10885158 – see authors and details:  
+   [IEEE Xplore Link](https://ieeexplore.ieee.org/document/10885158/authors#authors)
+
+3. **OWASP Web Security Testing Guide (WSTG)**  
+   [OWASP WSTG](https://owasp.org/www-project-web-security-testing-guide/)
+
+4. **LangGraph – Graph-based Orchestration for Multi-Agent LLM Workflows**  
+   [LangGraph Documentation](https://www.langgraph.com/)
+
 ## TODO
 - Different model integration
 - Buffer Overlfow Attack Integration
