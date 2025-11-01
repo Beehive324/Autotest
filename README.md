@@ -132,8 +132,7 @@ graph = create_workflow()
    Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., & Cao, Y. (2022)  
    [arXiv:2210.03629](https://arxiv.org/abs/2210.03629)
 
-2. **IEEE Study on Multi-Agent Systems in Autonomous Workflows**  
-   IEEE document 10885158 – see authors and details:  
+2. **IEEE Study on Multi-Agent Systems in Autonomous Workflows**   
    [IEEE Xplore Link](https://ieeexplore.ieee.org/document/10885158/authors#authors)
 
 3. **OWASP Web Security Testing Guide (WSTG)**  
