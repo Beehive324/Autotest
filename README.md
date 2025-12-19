@@ -139,7 +139,7 @@ graph = create_workflow()
    [OWASP WSTG](https://owasp.org/www-project-web-security-testing-guide/)
 
 4. **LangGraph – Graph-based Orchestration for Multi-Agent LLM Workflows**  
-   [LangGraph Documentation]([https://www.langgraph.com/](https://docs.langchain.com/oss/python/langgraph/graph-api))
+   [LangGraph Documentation](https://docs.langchain.com/oss/python/langgraph/graph-api)
 
 ## TODO
 - Different model integration
